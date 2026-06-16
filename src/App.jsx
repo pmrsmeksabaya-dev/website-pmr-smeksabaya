@@ -19,12 +19,14 @@ import AdminBerita from './pages/admin/AdminBerita';
 import AdminGaleri from './pages/admin/AdminGaleri';
 import AdminSettings from './pages/admin/AdminSettings';
 import ProtectedRoute from './components/ProtectedRoute';
+import { Analytics } from "@vercel/analytics/react"
 
 function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
         <Router>
+          <Analytics />
           <Routes>
             {/* Public Routes */}
             <Route path="/" element={<Layout />}>

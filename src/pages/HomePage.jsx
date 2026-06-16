@@ -3,15 +3,14 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
 import { Heart, Users, Calendar, Award, ArrowRight } from 'lucide-react';
-import logoPmr from '../assets/pmr.jpg';
-import logoPmi from '../assets/pmi.jpg';
+import logoPmr from '../assets/pmr.png';
 
 const HomePage = () => {
   const stats = [
-    { icon: Users, value: 150, label: 'Anggota Aktif' },
-    { icon: Heart, value: 25, label: 'Program Kerja' },
-    { icon: Calendar, value: 50, label: 'Kegiatan Tahunan' },
-    { icon: Award, value: 10, label: 'Prestasi' },
+    { icon: Users, value: '30+', label: 'Anggota Aktif' },
+    { icon: Heart, value: '8+', label: 'Program Kerja' },
+    { icon: Calendar, value: '4', label: 'Kegiatan Tahunan' },
+    { icon: Award, value: '1', label: 'Prestasi' },
   ];
 
   const programs = [
@@ -29,13 +28,9 @@ const HomePage = () => {
 
   return (
     <div className="pt-16">
-      {/* Hero Section */}
+      {/* Hero Section - CUMA PMR, TANPA BLUR MERAH */}
       <section className="relative min-h-[90vh] flex items-center overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-pmi/20 via-white to-white dark:via-gray-900 dark:to-gray-900"></div>
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-20 left-10 w-64 h-64 bg-pmi rounded-full blur-3xl"></div>
-          <div className="absolute bottom-20 right-10 w-96 h-96 bg-maroon rounded-full blur-3xl"></div>
-        </div>
+        <div className="absolute inset-0 bg-gradient-to-br from-gray-50 via-white to-white dark:via-gray-900 dark:to-gray-900"></div>
         
         <div className="container-custom relative z-10">
           <div className="flex flex-col lg:flex-row items-center justify-between gap-12">
@@ -45,16 +40,14 @@ const HomePage = () => {
               transition={{ duration: 0.6 }}
               className="flex-1 text-center lg:text-left"
             >
-              <div className="flex justify-center lg:justify-start gap-4 mb-6">
-                <img src={logoPmr} alt="PMR" className="h-16 w-16 object-contain" />
-                <img src={logoPmi} alt="PMI" className="h-16 w-16 object-contain" />
-              </div>
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4">
+              
+              
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-2">
                 <span className="text-pmi">PMR WIRA</span>
                 <br />
                 SMKN 1 PRINGGABAYA
               </h1>
-              <p className="text-lg md:text-xl text-gray-600 dark:text-gray-300 mb-4">
+              <p className="text-lg md:text-xl text-gray-600 dark:text-gray-300 mb-4 max-w-2xl">
                 Organisasi Kepalangmerahan yang membentuk generasi muda berjiwa kemanusiaan
               </p>
               <p className="text-xl md:text-2xl font-semibold text-maroon dark:text-gold mb-8">
@@ -74,18 +67,34 @@ const HomePage = () => {
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.6 }}
-              className="flex-1"
+              className="flex-1 flex justify-center"
             >
+              {/* Hero Logo - PMR SAJA, TANPA BLUR MERAH */}
               <div className="relative">
-                <div className="absolute inset-0 bg-pmi rounded-full blur-2xl opacity-30"></div>
-                <img src={logoPmr} alt="PMR Hero" className="relative w-full max-w-md mx-auto object-contain drop-shadow-2xl" />
+                <div className="absolute inset-0 bg-gradient-to-br from-gray-50/50 to-white rounded-3xl -z-10"></div>
+                <div className="relative p-6 md:p-8 lg:p-10 bg-white/95 backdrop-blur-sm border border-gray-100/80 rounded-[32px] md:rounded-[40px] shadow-premium-lg hover:shadow-premium-hover transition-all duration-500 hover:transform hover:-translate-y-1">
+                  <img 
+                    src={logoPmr} 
+                    alt="PMR Hero" 
+                    className="w-48 h-48 md:w-64 md:h-64 lg:w-80 lg:h-80 object-contain transition-all duration-500 hover:scale-105"
+                    style={{
+                      filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.08))'
+                    }}
+                  />
+                  <div className="text-center mt-4">
+                    <h2 className="text-lg md:text-xl font-bold bg-gradient-to-r from-pmi to-maroon bg-clip-text text-transparent">
+                      PMR WIRA
+                    </h2>
+                    <p className="text-sm text-gray-500">SMKN 1 Pringgabaya</p>
+                  </div>
+                </div>
               </div>
             </motion.div>
           </div>
         </div>
       </section>
 
-      {/* Tentang PMR */}
+      {/* Rest tetap sama */}
       <Section id="tentang">
         <h2 className="text-3xl md:text-4xl font-bold text-center mb-6">Tentang <span className="text-pmi">PMR Wira</span></h2>
         <p className="text-center text-gray-600 dark:text-gray-400 max-w-3xl mx-auto mb-12">
@@ -98,7 +107,6 @@ const HomePage = () => {
         </div>
       </Section>
 
-      {/* Program Unggulan */}
       <Section bg="gray">
         <h2 className="text-3xl md:text-4xl font-bold text-center mb-6">Program <span className="text-pmi">Unggulan</span></h2>
         <p className="text-center text-gray-600 dark:text-gray-400 max-w-2xl mx-auto mb-12">
@@ -111,7 +119,6 @@ const HomePage = () => {
         </div>
       </Section>
 
-      {/* Kegiatan Terbaru */}
       <Section>
         <h2 className="text-3xl md:text-4xl font-bold text-center mb-6">Kegiatan <span className="text-pmi">Terbaru</span></h2>
         <div className="grid md:grid-cols-3 gap-6 mb-8">
@@ -126,12 +133,12 @@ const HomePage = () => {
         </div>
       </Section>
 
-      {/* CTA Pendaftaran */}
       <CTASection />
     </div>
   );
 };
 
+// Components tetap sama
 const Section = ({ children, bg, id }) => (
   <section id={id} className={`py-16 md:py-20 ${bg === 'gray' ? 'bg-gray-50 dark:bg-gray-800/50' : ''}`}>
     <div className="container-custom">{children}</div>
@@ -140,31 +147,51 @@ const Section = ({ children, bg, id }) => (
 
 const StatCard = ({ icon: Icon, value, label }) => {
   const [ref, inView] = useInView({ triggerOnce: true });
-  const [count, setCount] = useState(0);
+  const [displayValue, setDisplayValue] = useState('0');
 
   useEffect(() => {
     if (inView) {
-      let start = 0;
-      const duration = 2000;
-      const step = value / (duration / 16);
-      const timer = setInterval(() => {
-        start += step;
-        if (start >= value) {
-          setCount(value);
-          clearInterval(timer);
+      let targetNumber = 0;
+      let suffix = '';
+      
+      if (typeof value === 'string') {
+        const match = value.match(/^(\d+)(.*)$/);
+        if (match) {
+          targetNumber = parseInt(match[1], 10);
+          suffix = match[2];
         } else {
-          setCount(Math.floor(start));
+          setDisplayValue(value);
+          return;
         }
-      }, 16);
-      return () => clearInterval(timer);
+      } else if (typeof value === 'number') {
+        targetNumber = value;
+      }
+      
+      if (targetNumber > 0) {
+        const duration = 2000;
+        const step = targetNumber / (duration / 16);
+        let current = 0;
+        const timer = setInterval(() => {
+          current += step;
+          if (current >= targetNumber) {
+            setDisplayValue(targetNumber + suffix);
+            clearInterval(timer);
+          } else {
+            setDisplayValue(Math.floor(current) + suffix);
+          }
+        }, 16);
+        return () => clearInterval(timer);
+      }
     }
   }, [inView, value]);
 
   return (
-    <div ref={ref} className="text-center p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition">
-      <Icon className="w-12 h-12 text-pmi mx-auto mb-3" />
-      <h3 className="text-3xl font-bold text-gray-800 dark:text-white">{count}+</h3>
-      <p className="text-gray-600 dark:text-gray-400">{label}</p>
+    <div ref={ref} className="text-center p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition group">
+      <div className="w-14 h-14 bg-pmi/10 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-pmi transition">
+        <Icon className="w-7 h-7 text-pmi group-hover:text-white transition" />
+      </div>
+      <h3 className="text-3xl font-bold text-gray-800 dark:text-white mb-1">{displayValue}</h3>
+      <p className="text-gray-600 dark:text-gray-400 text-sm">{label}</p>
     </div>
   );
 };

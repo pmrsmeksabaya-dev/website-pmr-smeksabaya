@@ -1,8 +1,8 @@
 import { Outlet } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
-import FloatingSocial from '../components/FloatingSocial';
 import BackToTop from '../components/BackToTop';
+import FloatingSocial from '../components/FloatingSocial';
 
 function Layout() {
   return (
@@ -12,8 +12,8 @@ function Layout() {
         <Outlet />
       </main>
       <Footer />
-      <FloatingSocial />
       <BackToTop />
+      <FloatingSocial />
     </div>
   );
 }
