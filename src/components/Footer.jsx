@@ -61,7 +61,8 @@ const Footer = () => {
           <div>
             <h4 className="font-semibold mb-4 border-l-4 border-pmi pl-3">Kontak</h4>
             <p className="text-gray-400 text-sm">SMKN 1 Pringgabaya</p>
-            <p className="text-gray-400 text-sm">Jl. Raya Pringgabaya, Lombok Timur, NTB</p>
+            <p className="text-gray-400 text-sm">Jl. Raya Mataram - Labuhan Lombok No.KM.3, Pringgabaya Utara,
+Kec. Pringgabaya, Kabupaten Lombok Timur, Nusa Tenggara Barat.</p>
             <p className="text-gray-400 text-sm mt-2">WhatsApp: +62 859 7433 5511</p>
           </div>
         </div>
