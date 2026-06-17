@@ -50,19 +50,20 @@ const KontakPage = () => {
             </h2>
             <p className="text-gray-600 dark:text-gray-400 mb-4">
               SMKN 1 Pringgabaya<br />
-              Jl. Raya Pringgabaya No. KM 5, Labuan Lombok,<br />
-              Kec. Pringgabaya, Kab. Lombok Timur, NTB 83654
+              Jl. Raya Mataram - Labuhan Lombok No.KM.3, Pringgabaya Utara, <br />
+              Kec. Pringgabaya, Kabupaten Lombok Timur, Nusa Tenggara Bar. 83654
             </p>
             <div className="aspect-video bg-gray-200 dark:bg-gray-700 rounded-lg overflow-hidden">
               <iframe
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3947.123456789!2d116.56789!3d-8.45678!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2dcdb123456789ab%3A0x123456789abcdef!2sSMKN%201%20Pringgabaya!5e0!3m2!1sid!2sid!4v1234567890123!5m2!1sid!2sid"
-                width="100%"
-                height="100%"
-                style={{ border: 0 }}
-                allowFullScreen
-                loading="lazy"
-                title="Google Maps SMKN 1 Pringgabaya"
-              ></iframe>
+  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3155.123456789!2d116.6329128!3d-8.532827!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2dcdb48920606097%3A0x1da58c9f718d4634!2sSMK%20Negeri%201%20Pringgabaya!5e0!3m2!1sid!2sid!4v1234567890123!5m2!1sid!2sid"
+  width="100%"
+  height="100%"
+  style={{ border: 0 }}
+  allowFullScreen
+  loading="lazy"
+  title="Google Maps SMKN 1 Pringgabaya"
+  className="w-full h-full"
+/>
             </div>
           </div>
 
@@ -73,15 +74,15 @@ const KontakPage = () => {
                 <Phone className="w-5 h-5 text-pmi mt-0.5" />
                 <div>
                   <p className="font-semibold">WhatsApp Admin</p>
-                  <p className="text-gray-600 dark:text-gray-400">+62 123 4567 890</p>
-                  <a href="https://wa.me/621234567890" className="text-pmi text-sm hover:underline">Chat via WhatsApp →</a>
+                  <p className="text-gray-600 dark:text-gray-400">+62 859 7433 5511</p>
+                  <a href="https://wa.me/6285974335511" className="text-pmi text-sm hover:underline">Chat via WhatsApp →</a>
                 </div>
               </div>
               <div className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition">
                 <Mail className="w-5 h-5 text-pmi mt-0.5" />
                 <div>
                   <p className="font-semibold">Email</p>
-                  <p className="text-gray-600 dark:text-gray-400">pmr@smkn1pringgabaya.sch.id</p>
+                  <p className="text-gray-600 dark:text-gray-400">pmrsmeksabaya@gmail.com</p>
                 </div>
               </div>
               <div className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition">

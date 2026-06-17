@@ -27,7 +27,7 @@ const FloatingSocial = () => {
     { name: 'Instagram', icon: Instagram, url: 'https://www.instagram.com/laspraja_smkn1baya', color: '#e4405f', delay: 0.1 },
     { name: 'Facebook', icon: Facebook, url: 'https://www.facebook.com/share/1FnbuMwaff/', color: '#1877f2', delay: 0.2 },
     { name: 'YouTube', icon: Youtube, url: 'https://www.youtube.com/@pmrwira.smkn1pringgabaya', color: '#ff0000', delay: 0.3 },
-    { name: 'WhatsApp', icon: Phone, url: 'https://wa.me/6281234567890', color: '#25D366', delay: 0.4 },
+    { name: 'WhatsApp', icon: Phone, url: 'https://wa.me/6285974335511', color: '#25D366', delay: 0.4 },
   ];
 
   

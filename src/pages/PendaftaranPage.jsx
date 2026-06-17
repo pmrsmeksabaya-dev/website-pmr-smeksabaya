@@ -5,7 +5,7 @@ const PendaftaranPage = () => {
   const requirements = [
     'Siswa/i aktif SMKN 1 Pringgabaya',
     'Kelas X, XI, atau XII',
-    'Memiliki surat izin orang tua',
+    'Memiliki izin orang tua',
     'Bersedia mengikuti seluruh kegiatan PMR',
     'Sehat jasmani dan rohani',
     'Memiliki komitmen tinggi terhadap kemanusiaan',
@@ -83,7 +83,7 @@ const PendaftaranPage = () => {
             </div>
             <div className="bg-white dark:bg-gray-800 rounded-lg px-6 py-3 text-center">
               <p className="font-semibold">Gelombang 2</p>
-              <p>Desember - Januari</p>
+              <p>November - Desember</p>
             </div>
           </div>
         </div>

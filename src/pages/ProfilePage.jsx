@@ -1,13 +1,15 @@
 import { Heart, Target, Eye, BookOpen, Shield, Users } from 'lucide-react';
 
 const ProfilePage = () => {
-  const visi = "Membentuk remaja yang berkarakter, terampil, dan berjiwa kemanusiaan tinggi sebagai kader PMI yang tangguh dan siap siaga.";
+  const visi = " Mewujudkan PMR SMKN 1 Pringgabaya sebagai organisasi yang aktif, disiplin, profesional, dan berjiwa kemanusiaan, serta mampu menjadi teladan dalam kepedulian, kesiapsiagaan, dan kerja sama di lingkungan sekolah maupun masyarakat.";
   
   const misi = [
-    "Meningkatkan pengetahuan dan keterampilan anggota dalam bidang kepalangmerahan",
-    "Menumbuhkan jiwa kepemimpinan dan solidaritas sosial di kalangan remaja",
-    "Mengembangkan kemampuan pertolongan pertama dan penanggulangan bencana",
-    "Membentuk karakter disiplin, tanggung jawab, dan berintegritas tinggi",
+    "Meningkatkan kedisiplinan dan rasa tanggung jawab anggota PMR Dengan membangun ke aktifan dalam kegiatan, tepat waktu, dan komitmen terhadap tugas.",
+    "Mengembangkan keterampilan dan kemampuan anggota PMR melalui latihan rutin, simulasi, dan kegiatan kepalangmerahan agar setiap anggota siap bertindak dalam situasi darurat.",
+    "Memperkuat rasa kebersamaan dan kekompakan antaranggota Dengan menciptakan suasana organisasi yang saling menghargai, mendukung, menghormati, dan bekerja sama sebagai satu tim.",
+    "Mengaktifkan peran PMR dalam kegiatan sekolah dan sosial Supaya PMR tidak hanya hadir sebagai organisasi, tetapi juga sebagai garda kemanusiaan di lingkungan sekolah dan masyarakat.",
+    "Meningkatkan citra dan kepercayaan terhadap PMR Dengan menunjukkan sikap profesional, sopan, dan siap membantu siapa pun yang membutuhkan.",
+    "Mendorong anggota agar lebih percaya diri dan berani berperan Baik dalam kepemimpinan, komunikasi, maupun dalam setiap kegiatan PMR.",
   ];
 
   const triBakti = [
@@ -58,11 +60,13 @@ const ProfilePage = () => {
         <div className="bg-gradient-to-r from-pmi/5 to-maroon/5 dark:from-pmi/10 dark:to-maroon/10 rounded-xl p-6 md:p-8 mb-8">
           <h2 className="text-2xl font-bold mb-4">Sejarah PMR</h2>
           <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
-            Palang Merah Remaja (PMR) didirikan pada tanggal 1 Maret 1950 sebagai organisasi 
-            kepalangmerahan untuk remaja di bawah naungan PMI. PMR memiliki tiga tingkatan: 
-            PMR Mula (SD), PMR Madya (SMP), dan PMR Wira (SMA/SMK). PMR Wira Unit SMKN 1 
-            Pringgabaya telah aktif sejak tahun 2010 dan terus berkembang mencetak generasi 
-            muda yang tanggap bencana dan berjiwa sosial.
+            Palang Merah Remaja (PMR) secara resmi berdiri di Indonesia
+            pada 1 Maret 1950 sebagai wadah pembinaan generasi 
+            muda di bawah naungan Palang Merah Indonesia (PMI). 
+            PMR memiliki tiga tingkatan, yaitu PMR Mula (SD/sederajat),
+            PMR Madya (SMP/sederajat), dan PMR Wira (SMA/SMK/sederajat).
+            PMR berperan dalam membentuk remaja yang berkarakter, peduli sesama, tanggap bencana, 
+            serta menjunjung tinggi nilai-nilai kemanusiaan sesuai Prinsip Dasar Gerakan Palang Merah dan Bulan Sabit Merah Internasional.
           </p>
         </div>
 
