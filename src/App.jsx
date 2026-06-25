@@ -20,6 +20,7 @@ import AdminGaleri from './pages/admin/AdminGaleri';
 import AdminSettings from './pages/admin/AdminSettings';
 import ProtectedRoute from './components/ProtectedRoute';
 import { Analytics } from "@vercel/analytics/react"
+import { SpeedInsights } from '@vercel/speed-insights/react';
 
 function App() {
   return (
@@ -27,8 +28,8 @@ function App() {
       <AuthProvider>
         <Router>
           <Analytics />
+          <SpeedInsights />
           <Routes>
-            {/* Public Routes */}
             <Route path="/" element={<Layout />}>
               <Route index element={<HomePage />} />
               <Route path="profil" element={<ProfilePage />} />
@@ -40,7 +41,6 @@ function App() {
               <Route path="kontak" element={<KontakPage />} />
             </Route>
             
-            {/* Admin Routes */}
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/admin" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
               <Route index element={<AdminDashboard />} />
