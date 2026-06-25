@@ -1,6 +1,6 @@
 import { Outlet, Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
-import { Menu, X, LayoutDashboard, Users, Calendar, FileText, Image, Settings, LogOut, Sun, Moon } from 'lucide-react';
+import { Menu, X, LayoutDashboard, Users, Calendar, FileText, Image, Settings, LogOut, Sun, Moon, Activity } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 
@@ -14,6 +14,7 @@ const AdminLayout = () => {
     { path: '/admin', icon: LayoutDashboard, label: 'Dashboard' },
     { path: '/admin/struktur', icon: Users, label: 'Kelola Struktur' },
     { path: '/admin/program', icon: Calendar, label: 'Kelola Program' },
+    { path: '/admin/kegiatan', icon: Activity, label: 'Kelola Kegiatan' }, // 👈 TAMBAHKAN INI
     { path: '/admin/berita', icon: FileText, label: 'Kelola Berita' },
     { path: '/admin/galeri', icon: Image, label: 'Kelola Galeri' },
     { path: '/admin/settings', icon: Settings, label: 'Pengaturan' },
@@ -41,7 +42,7 @@ const AdminLayout = () => {
           <p className="text-sm text-gray-500 dark:text-gray-400">PMR Wira SMKN 1 Pringgabaya</p>
         </div>
 
-        <nav className="p-4 space-y-2">
+        <nav className="p-4 space-y-1 overflow-y-auto max-h-[calc(100vh-180px)]">
           {menuItems.map((item) => (
             <Link
               key={item.path}
@@ -55,7 +56,7 @@ const AdminLayout = () => {
           ))}
         </nav>
 
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t dark:border-gray-700 space-y-2">
+        <div className="absolute bottom-0 left-0 right-0 p-4 border-t dark:border-gray-700 space-y-2 bg-white dark:bg-gray-800">
           <button
             onClick={toggleTheme}
             className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition w-full"

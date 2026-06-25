@@ -2,10 +2,14 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
-import { Heart, Users, Calendar, Award, ArrowRight } from 'lucide-react';
+import { Heart, Users, Calendar, Award, ArrowRight, Droplet, Loader2 } from 'lucide-react';
 import logoPmr from '../assets/pmr.png';
+import { supabase } from '../supabase/client';
 
 const HomePage = () => {
+  const [kegiatan, setKegiatan] = useState([]);
+  const [loadingKegiatan, setLoadingKegiatan] = useState(true);
+
   const stats = [
     { icon: Users, value: '30+', label: 'Anggota Aktif' },
     { icon: Heart, value: '8+', label: 'Program Kerja' },
@@ -20,15 +24,33 @@ const HomePage = () => {
     { title: 'P3K', desc: 'Pelatihan Pertolongan Pertama Pada Kecelakaan' },
   ];
 
-  const kegiatan = [
-    { title: 'Latihan Rutin PMR', date: 'Setiap Sabtu', img: 'https://picsum.photos/400/250?random=1' },
-    { title: 'Bakti Sosial', date: 'Bulan Ramadhan', img: 'https://picsum.photos/400/250?random=2' },
-    { title: 'Simulasi Bencana', date: 'Semester Genap', img: 'https://picsum.photos/400/250?random=3' },
-  ];
+  // Fetch kegiatan dari Supabase
+  useEffect(() => {
+    fetchKegiatan();
+  }, []);
+
+  const fetchKegiatan = async () => {
+    setLoadingKegiatan(true);
+    try {
+      const { data, error } = await supabase
+        .from('kegiatan')
+        .select('*')
+        .order('tanggal', { ascending: false })
+        .limit(3); // Ambil 3 kegiatan terbaru
+
+      if (error) throw error;
+      setKegiatan(data || []);
+    } catch (error) {
+      console.error('Error fetching kegiatan:', error);
+      setKegiatan([]);
+    } finally {
+      setLoadingKegiatan(false);
+    }
+  };
 
   return (
     <div className="pt-16">
-      {/* Hero Section - CUMA PMR, TANPA BLUR MERAH */}
+      {/* Hero Section */}
       <section className="relative min-h-[90vh] flex items-center overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-gray-50 via-white to-white dark:via-gray-900 dark:to-gray-900"></div>
         
@@ -40,7 +62,19 @@ const HomePage = () => {
               transition={{ duration: 0.6 }}
               className="flex-1 text-center lg:text-left"
             >
-              
+              {/* Logo di Atas Judul */}
+              <div className="flex justify-center lg:justify-start mb-6">
+                <div className="bg-white p-3 md:p-4 rounded-2xl border border-gray-100/80 shadow-premium hover:shadow-premium-hover transition-all duration-300 hover:transform hover:-translate-y-1 hover:scale-[1.02]">
+                  <img 
+                    src={logoPmr} 
+                    alt="PMR Logo" 
+                    className="w-16 h-16 md:w-20 md:h-20 object-contain"
+                    style={{
+                      filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.06))'
+                    }}
+                  />
+                </div>
+              </div>
               
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-2">
                 <span className="text-pmi">PMR WIRA</span>
@@ -69,7 +103,6 @@ const HomePage = () => {
               transition={{ duration: 0.6 }}
               className="flex-1 flex justify-center"
             >
-              {/* Hero Logo - PMR SAJA, TANPA BLUR MERAH */}
               <div className="relative">
                 <div className="absolute inset-0 bg-gradient-to-br from-gray-50/50 to-white rounded-3xl -z-10"></div>
                 <div className="relative p-6 md:p-8 lg:p-10 bg-white/95 backdrop-blur-sm border border-gray-100/80 rounded-[32px] md:rounded-[40px] shadow-premium-lg hover:shadow-premium-hover transition-all duration-500 hover:transform hover:-translate-y-1">
@@ -94,7 +127,7 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* Rest tetap sama */}
+      {/* Tentang PMR */}
       <Section id="tentang">
         <h2 className="text-3xl md:text-4xl font-bold text-center mb-6">Tentang <span className="text-pmi">PMR Wira</span></h2>
         <p className="text-center text-gray-600 dark:text-gray-400 max-w-3xl mx-auto mb-12">
@@ -107,6 +140,7 @@ const HomePage = () => {
         </div>
       </Section>
 
+      {/* Program Unggulan */}
       <Section bg="gray">
         <h2 className="text-3xl md:text-4xl font-bold text-center mb-6">Program <span className="text-pmi">Unggulan</span></h2>
         <p className="text-center text-gray-600 dark:text-gray-400 max-w-2xl mx-auto mb-12">
@@ -119,13 +153,31 @@ const HomePage = () => {
         </div>
       </Section>
 
+      {/* Kegiatan Terbaru - DARI SUPABASE */}
       <Section>
         <h2 className="text-3xl md:text-4xl font-bold text-center mb-6">Kegiatan <span className="text-pmi">Terbaru</span></h2>
-        <div className="grid md:grid-cols-3 gap-6 mb-8">
-          {kegiatan.map((item, idx) => (
-            <ActivityCard key={idx} title={item.title} date={item.date} img={item.img} />
-          ))}
-        </div>
+        {loadingKegiatan ? (
+          <div className="flex justify-center py-12">
+            <Loader2 className="w-8 h-8 text-pmi animate-spin" />
+          </div>
+        ) : kegiatan.length === 0 ? (
+          <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600">
+            <Calendar size={48} className="mx-auto text-gray-400 mb-3" />
+            <p className="text-gray-500">Belum ada kegiatan terbaru</p>
+          </div>
+        ) : (
+          <div className="grid md:grid-cols-3 gap-6 mb-8">
+            {kegiatan.map((item) => (
+              <ActivityCard 
+                key={item.id} 
+                title={item.judul} 
+                date={item.tanggal ? new Date(item.tanggal).toLocaleDateString('id-ID') : 'TBA'} 
+                img={item.thumbnail || 'https://picsum.photos/400/250?random=1'}
+                isDonor={item.judul.includes('Donor Darah')}
+              />
+            ))}
+          </div>
+        )}
         <div className="text-center">
           <Link to="/kegiatan" className="inline-flex items-center gap-2 text-pmi font-semibold hover:gap-3 transition-all">
             Lihat Semua Kegiatan <ArrowRight size={18} />
@@ -133,18 +185,19 @@ const HomePage = () => {
         </div>
       </Section>
 
+      {/* CTA Pendaftaran */}
       <CTASection />
     </div>
   );
 };
 
-// Components tetap sama
 const Section = ({ children, bg, id }) => (
   <section id={id} className={`py-16 md:py-20 ${bg === 'gray' ? 'bg-gray-50 dark:bg-gray-800/50' : ''}`}>
     <div className="container-custom">{children}</div>
   </section>
 );
 
+// ✅ FIXED StatCard Component - No more NaN!
 const StatCard = ({ icon: Icon, value, label }) => {
   const [ref, inView] = useInView({ triggerOnce: true });
   const [displayValue, setDisplayValue] = useState('0');
@@ -206,12 +259,30 @@ const ProgramCard = ({ title, desc }) => (
   </div>
 );
 
-const ActivityCard = ({ title, date, img }) => (
-  <div className="bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition">
-    <img src={img} alt={title} className="w-full h-48 object-cover" />
+const ActivityCard = ({ title, date, img, isDonor }) => (
+  <div className="bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition group">
+    <div className="relative overflow-hidden">
+      <img 
+        src={img} 
+        alt={title} 
+        className="w-full h-48 object-cover group-hover:scale-105 transition duration-500"
+        onError={(e) => {
+          e.target.src = 'https://picsum.photos/400/250?random=1';
+        }}
+      />
+      {isDonor && (
+        <div className="absolute top-3 left-3">
+          <span className="px-3 py-1 bg-red-500 text-white text-xs font-medium rounded-full flex items-center gap-1">
+            <Droplet size={12} /> Donor Darah
+          </span>
+        </div>
+      )}
+    </div>
     <div className="p-4">
-      <h3 className="font-semibold text-lg mb-1">{title}</h3>
-      <p className="text-pmi text-sm">{date}</p>
+      <h3 className="font-semibold text-lg mb-1 group-hover:text-pmi transition">{title}</h3>
+      <p className="text-pmi text-sm flex items-center gap-1">
+        <Calendar size={14} /> {date}
+      </p>
     </div>
   </div>
 );

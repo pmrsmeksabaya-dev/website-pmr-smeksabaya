@@ -21,6 +21,7 @@ import AdminSettings from './pages/admin/AdminSettings';
 import ProtectedRoute from './components/ProtectedRoute';
 import { Analytics } from "@vercel/analytics/react"
 import { SpeedInsights } from '@vercel/speed-insights/react';
+import AdminKegiatan from './pages/admin/AdminKegiatan';
 
 function App() {
   return (
@@ -49,6 +50,7 @@ function App() {
               <Route path="berita" element={<AdminBerita />} />
               <Route path="galeri" element={<AdminGaleri />} />
               <Route path="settings" element={<AdminSettings />} />
+              <Route path="kegiatan" element={<AdminKegiatan />} />
             </Route>
           </Routes>
         </Router>
