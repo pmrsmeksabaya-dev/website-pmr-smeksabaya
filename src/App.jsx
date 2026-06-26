@@ -15,7 +15,6 @@ import AdminLogin from './pages/admin/AdminLogin';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminStruktur from './pages/admin/AdminStruktur';
 import AdminProgram from './pages/admin/AdminProgram';
-import AdminBerita from './pages/admin/AdminBerita';
 import AdminGaleri from './pages/admin/AdminGaleri';
 import AdminSettings from './pages/admin/AdminSettings';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -47,7 +46,6 @@ function App() {
               <Route index element={<AdminDashboard />} />
               <Route path="struktur" element={<AdminStruktur />} />
               <Route path="program" element={<AdminProgram />} />
-              <Route path="berita" element={<AdminBerita />} />
               <Route path="galeri" element={<AdminGaleri />} />
               <Route path="settings" element={<AdminSettings />} />
               <Route path="kegiatan" element={<AdminKegiatan />} />

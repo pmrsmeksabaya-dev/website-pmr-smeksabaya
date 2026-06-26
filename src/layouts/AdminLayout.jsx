@@ -1,6 +1,6 @@
 import { Outlet, Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
-import { Menu, X, LayoutDashboard, Users, Calendar, FileText, Image, Settings, LogOut, Sun, Moon, Activity } from 'lucide-react';
+import { Menu, X, LayoutDashboard, Users, Calendar, Image, Settings, LogOut, Sun, Moon, Activity } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 
@@ -14,8 +14,7 @@ const AdminLayout = () => {
     { path: '/admin', icon: LayoutDashboard, label: 'Dashboard' },
     { path: '/admin/struktur', icon: Users, label: 'Kelola Struktur' },
     { path: '/admin/program', icon: Calendar, label: 'Kelola Program' },
-    { path: '/admin/kegiatan', icon: Activity, label: 'Kelola Kegiatan' }, // 👈 TAMBAHKAN INI
-    { path: '/admin/berita', icon: FileText, label: 'Kelola Berita' },
+    { path: '/admin/kegiatan', icon: Activity, label: 'Kelola Kegiatan' },
     { path: '/admin/galeri', icon: Image, label: 'Kelola Galeri' },
     { path: '/admin/settings', icon: Settings, label: 'Pengaturan' },
   ];
@@ -27,7 +26,6 @@ const AdminLayout = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Mobile Sidebar Toggle */}
       <button
         onClick={() => setSidebarOpen(!sidebarOpen)}
         className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg"
@@ -74,7 +72,6 @@ const AdminLayout = () => {
         </div>
       </aside>
 
-      {/* Main Content */}
       <main className="lg:ml-64 p-4 md:p-6">
         <div className="max-w-7xl mx-auto">
           <Outlet />

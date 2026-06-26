@@ -1,95 +1,108 @@
 import { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Search, X, Save, Upload, Loader2 } from 'lucide-react';
-
-const initialStruktur = {
-  ketua: { id: 1, nama: "Nadia Amanda Sari", jabatan: "Ketua", divisi: "-", urutan: 1 },
-  wakil: { id: 2, nama: "Yudha Akhira", jabatan: "Wakil Ketua", divisi: "-", urutan: 2 },
-  sekretaris: [
-    { id: 3, nama: "Zuhratul Hasanah", jabatan: "Sekretaris", divisi: "-", urutan: 3 },
-    { id: 4, nama: "Safa Safira", jabatan: "Sekretaris", divisi: "-", urutan: 4 },
-  ],
-  bendahara: { id: 5, nama: "Saskia Riyanti", jabatan: "Bendahara", divisi: "-", urutan: 5 },
-  ketuaDivisi: { id: 6, nama: "Hesta Wardani", jabatan: "Ketua Divisi", divisi: "-", urutan: 6 },
-  divisiKeanggotaan: [
-    { id: 7, nama: "Tuti Lestari", jabatan: "Anggota", divisi: "Keanggotaan", urutan: 7 },
-    { id: 8, nama: "Umar Mujahid Hafidz Zhulloh", jabatan: "Anggota", divisi: "Keanggotaan", urutan: 8 },
-  ],
-  divisiMedia: [
-    { id: 9, nama: "Nia Asmalika", jabatan: "Anggota", divisi: "Media", urutan: 9 },
-    { id: 10, nama: "Siti Rauhun", jabatan: "Anggota", divisi: "Media", urutan: 10 },
-  ],
-  divisiPerlengkapan: [
-    { id: 11, nama: "M. Ajwa", jabatan: "Anggota", divisi: "Perlengkapan", urutan: 11 },
-    { id: 12, nama: "Saepudin Amsir", jabatan: "Anggota", divisi: "Perlengkapan", urutan: 12 },
-  ],
-  divisiHumas: [
-    { id: 13, nama: "Nur Fadila", jabatan: "Anggota", divisi: "Humas", urutan: 13 },
-    { id: 14, nama: "Olipia Zuliatul Fitri", jabatan: "Anggota", divisi: "Humas", urutan: 14 },
-  ],
-  divisiUKS: [
-    { id: 15, nama: "Cici Rezilda Putri", jabatan: "Anggota", divisi: "UKS", urutan: 15 },
-  ],
-};
-
-// Konversi ke array flat untuk tabel
-const getAllMembers = () => {
-  const members = [];
-  members.push(initialStruktur.ketua);
-  members.push(initialStruktur.wakil);
-  members.push(...initialStruktur.sekretaris);
-  members.push(initialStruktur.bendahara);
-  members.push(initialStruktur.ketuaDivisi);
-  members.push(...initialStruktur.divisiKeanggotaan);
-  members.push(...initialStruktur.divisiMedia);
-  members.push(...initialStruktur.divisiPerlengkapan);
-  members.push(...initialStruktur.divisiHumas);
-  members.push(...initialStruktur.divisiUKS);
-  return members;
-};
-
-const jabatanOptions = ["Ketua", "Wakil Ketua", "Sekretaris", "Bendahara", "Ketua Divisi", "Anggota"];
-const divisiOptions = ["-", "Keanggotaan", "Media", "Perlengkapan", "Humas", "UKS"];
+import { Plus, Edit, Trash2, Search, X, Save, Upload, Loader2, User, UserCircle, Camera } from 'lucide-react';
+import { supabase } from '../../supabase/client';
 
 const AdminStruktur = () => {
   const [members, setMembers] = useState([]);
   const [search, setSearch] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingMember, setEditingMember] = useState(null);
+  const [uploading, setUploading] = useState(false);
   const [formData, setFormData] = useState({
     nama: '',
     jabatan: 'Anggota',
     divisi: '-',
+    gender: 'male',
+    foto: null,
+    fotoFile: null,
   });
 
+  const jabatanOptions = ["Ketua", "Wakil Ketua", "Sekretaris", "Bendahara", "Ketua Divisi", "Anggota"];
+  const divisiOptions = ["-", "Keanggotaan", "Media", "Perlengkapan", "Humas", "UKS"];
+  const genderOptions = [
+    { value: 'male', label: 'Laki-laki' },
+    { value: 'female', label: 'Perempuan' },
+  ];
+
   useEffect(() => {
-    loadMembers();
+    fetchMembers();
   }, []);
 
-  const loadMembers = () => {
+  const fetchMembers = async () => {
     setLoading(true);
-    // Simulate load from localStorage or API
-    const saved = localStorage.getItem('pmr_struktur');
-    if (saved) {
-      setMembers(JSON.parse(saved));
-    } else {
-      setMembers(getAllMembers());
-      localStorage.setItem('pmr_struktur', JSON.stringify(getAllMembers()));
+    try {
+      const { data, error } = await supabase
+        .from('pengurus')
+        .select('*')
+        .order('urutan', { ascending: true });
+
+      if (error) throw error;
+      setMembers(data || []);
+    } catch (error) {
+      console.error('Error fetching members:', error);
+      alert('Gagal memuat data pengurus');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
-  const saveToLocalStorage = (data) => {
-    localStorage.setItem('pmr_struktur', JSON.stringify(data));
+  const handleFileUpload = async (file) => {
+    if (!file) return null;
+    
+    setUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}.${fileExt}`;
+      const filePath = `pengurus/${fileName}`;
+
+      // Cek bucket 'foto' ada atau tidak
+      const { error: uploadError } = await supabase.storage
+        .from('foto')
+        .upload(filePath, file);
+
+      if (uploadError) {
+        // Jika bucket belum ada, coba buat dulu atau pakai bucket 'public'
+        if (uploadError.message.includes('bucket not found')) {
+          // Coba upload ke bucket 'public'
+          const { error: uploadError2 } = await supabase.storage
+            .from('public')
+            .upload(filePath, file);
+          
+          if (uploadError2) throw uploadError2;
+          
+          const { data: { publicUrl } } = supabase.storage
+            .from('public')
+            .getPublicUrl(filePath);
+          return publicUrl;
+        }
+        throw uploadError;
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('foto')
+        .getPublicUrl(filePath);
+
+      return publicUrl;
+    } catch (error) {
+      console.error('Error uploading photo:', error);
+      alert('Gagal upload foto: ' + error.message);
+      return null;
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleOpenModal = (member = null) => {
     if (member) {
       setEditingMember(member);
       setFormData({
-        nama: member.nama,
-        jabatan: member.jabatan,
-        divisi: member.divisi,
+        nama: member.nama || '',
+        jabatan: member.jabatan || 'Anggota',
+        divisi: member.divisi || '-',
+        gender: member.gender || 'male',
+        foto: member.foto || null,
+        fotoFile: null,
       });
     } else {
       setEditingMember(null);
@@ -97,38 +110,95 @@ const AdminStruktur = () => {
         nama: '',
         jabatan: 'Anggota',
         divisi: '-',
+        gender: 'male',
+        foto: null,
+        fotoFile: null,
       });
     }
     setIsModalOpen(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formData.nama) {
       alert('Nama harus diisi!');
       return;
     }
 
-    let newMembers;
-    if (editingMember) {
-      newMembers = members.map(m => 
-        m.id === editingMember.id ? { ...formData, id: m.id, urutan: m.urutan } : m
-      );
-    } else {
-      const newId = Math.max(...members.map(m => m.id), 0) + 1;
-      newMembers = [...members, { ...formData, id: newId, urutan: members.length + 1 }];
+    let fotoUrl = formData.foto;
+
+    // Upload foto jika ada file baru
+    if (formData.fotoFile) {
+      const uploadedUrl = await handleFileUpload(formData.fotoFile);
+      if (uploadedUrl) {
+        fotoUrl = uploadedUrl;
+      }
     }
-    
-    setMembers(newMembers);
-    saveToLocalStorage(newMembers);
-    setIsModalOpen(false);
-    setEditingMember(null);
+
+    const dataToSave = {
+      nama: formData.nama,
+      jabatan: formData.jabatan,
+      divisi: formData.divisi,
+      gender: formData.gender,
+      foto: fotoUrl,
+    };
+
+    setUploading(true);
+    try {
+      if (editingMember) {
+        const { error } = await supabase
+          .from('pengurus')
+          .update(dataToSave)
+          .eq('id', editingMember.id);
+        
+        if (error) throw error;
+        alert('Pengurus berhasil diupdate!');
+      } else {
+        // Dapatkan urutan terakhir
+        const { data: lastData } = await supabase
+          .from('pengurus')
+          .select('urutan')
+          .order('urutan', { ascending: false })
+          .limit(1);
+        
+        const lastUrutan = lastData && lastData.length > 0 ? lastData[0].urutan : 0;
+        
+        const { error } = await supabase
+          .from('pengurus')
+          .insert([{
+            ...dataToSave,
+            urutan: lastUrutan + 1,
+          }]);
+        
+        if (error) throw error;
+        alert('Pengurus berhasil ditambahkan!');
+      }
+
+      setIsModalOpen(false);
+      setEditingMember(null);
+      fetchMembers();
+    } catch (error) {
+      console.error('Error saving:', error);
+      alert('Gagal menyimpan data: ' + error.message);
+    } finally {
+      setUploading(false);
+    }
   };
 
-  const handleDelete = (id, nama) => {
-    if (confirm(`Yakin ingin menghapus "${nama}"?`)) {
-      const newMembers = members.filter(m => m.id !== id);
-      setMembers(newMembers);
-      saveToLocalStorage(newMembers);
+  const handleDelete = async (id, nama) => {
+    if (!confirm(`Yakin ingin menghapus "${nama}"?`)) return;
+
+    try {
+      const { error } = await supabase
+        .from('pengurus')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+      alert('Pengurus berhasil dihapus!');
+      fetchMembers();
+    } catch (error) {
+      console.error('Error deleting:', error);
+      alert('Gagal menghapus: ' + error.message);
     }
   };
 
@@ -148,6 +218,13 @@ const AdminStruktur = () => {
     return colors[jabatan] || 'bg-gray-100 text-gray-700';
   };
 
+  const getGenderIcon = (gender, size = 18) => {
+    if (gender === 'female') {
+      return <User className="text-pink-500" size={size} />;
+    }
+    return <UserCircle className="text-blue-500" size={size} />;
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -159,7 +236,7 @@ const AdminStruktur = () => {
   return (
     <div>
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-        <h1 className="text-2xl font-bold">Kelola Struktur Organisasi</h1>
+        <h1 className="text-2xl font-bold">👥 Kelola Struktur Organisasi</h1>
         <button 
           onClick={() => handleOpenModal()}
           className="bg-pmi text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-red-700 transition"
@@ -189,9 +266,11 @@ const AdminStruktur = () => {
             <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase">No</th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase">Foto</th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase">Nama</th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase">Jabatan</th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase">Divisi</th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase">Gender</th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase">Aksi</th>
               </tr>
             </thead>
@@ -200,9 +279,18 @@ const AdminStruktur = () => {
                 <tr key={member.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
                   <td className="px-4 py-3 text-sm">{idx + 1}</td>
                   <td className="px-4 py-3">
+                    {member.foto ? (
+                      <img src={member.foto} alt={member.nama} className="w-10 h-10 rounded-full object-cover border-2 border-white shadow" />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                        {getGenderIcon(member.gender, 20)}
+                      </div>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
                     <div>
                       <p className="font-medium">{member.nama}</p>
-                      {member.divisi !== '-' && (
+                      {member.divisi && member.divisi !== '-' && (
                         <p className="text-xs text-gray-500 dark:text-gray-400">Divisi {member.divisi}</p>
                       )}
                     </div>
@@ -212,7 +300,10 @@ const AdminStruktur = () => {
                       {member.jabatan}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-sm">{member.divisi}</td>
+                  <td className="px-4 py-3 text-sm">{member.divisi || '-'}</td>
+                  <td className="px-4 py-3 text-sm">
+                    {member.gender === 'female' ? '👩 Perempuan' : '👨 Laki-laki'}
+                  </td>
                   <td className="px-4 py-3 flex gap-2">
                     <button onClick={() => handleOpenModal(member)} className="text-blue-500 hover:text-blue-700 p-1">
                       <Edit size={18} />
@@ -238,13 +329,13 @@ const AdminStruktur = () => {
         </div>
       </div>
 
-      {/* Modal Add/Edit */}
+      {/* Modal Add/Edit - LENGKAP dengan FOTO */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setIsModalOpen(false)}>
-          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full" onClick={e => e.stopPropagation()}>
-            <div className="p-5 border-b dark:border-gray-700 flex justify-between items-center">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full max-h-[90vh] overflow-auto" onClick={e => e.stopPropagation()}>
+            <div className="sticky top-0 bg-white dark:bg-gray-800 p-5 border-b dark:border-gray-700 flex justify-between items-center">
               <h2 className="text-xl font-bold">
-                {editingMember ? 'Edit Pengurus' : 'Tambah Pengurus Baru'}
+                {editingMember ? '✏️ Edit Pengurus' : '➕ Tambah Pengurus Baru'}
               </h2>
               <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full">
                 <X size={20} />
@@ -252,6 +343,78 @@ const AdminStruktur = () => {
             </div>
 
             <div className="p-5 space-y-4">
+              {/* Foto Upload */}
+              <div>
+                <label className="block text-sm font-medium mb-2">Foto Profil</label>
+                <div className="flex items-center gap-4">
+                  <div className="relative">
+                    <div className="w-20 h-20 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center overflow-hidden border-2 border-pmi/30">
+                      {formData.fotoFile ? (
+                        <img 
+                          src={URL.createObjectURL(formData.fotoFile)} 
+                          alt="Preview" 
+                          className="w-full h-full object-cover"
+                        />
+                      ) : formData.foto ? (
+                        <img 
+                          src={formData.foto} 
+                          alt="Foto" 
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            e.target.parentElement.innerHTML = `
+                              <div class="w-full h-full flex items-center justify-center">
+                                <Camera class="w-8 h-8 text-gray-400" />
+                              </div>
+                            `;
+                          }}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Camera className="w-8 h-8 text-gray-400" />
+                        </div>
+                      )}
+                    </div>
+                    <label className="absolute -bottom-1 -right-1 p-1.5 bg-pmi text-white rounded-full cursor-pointer hover:bg-red-700 transition shadow-lg">
+                      <Camera size={14} />
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files[0];
+                          if (file) {
+                            setFormData({ ...formData, fotoFile: file });
+                          }
+                        }}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Klik ikon kamera untuk upload
+                    </p>
+                    <p className="text-xs text-gray-400">Format: JPG, PNG • Max 2MB</p>
+                    {formData.foto && !formData.fotoFile && (
+                      <button
+                        onClick={() => setFormData({ ...formData, foto: null })}
+                        className="text-xs text-red-500 hover:text-red-700 mt-1"
+                      >
+                        Hapus foto
+                      </button>
+                    )}
+                    {formData.fotoFile && (
+                      <button
+                        onClick={() => setFormData({ ...formData, fotoFile: null })}
+                        className="text-xs text-red-500 hover:text-red-700 mt-1"
+                      >
+                        Batal pilih foto
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               <div>
                 <label className="block text-sm font-medium mb-1">Nama Lengkap *</label>
                 <input 
@@ -285,14 +448,40 @@ const AdminStruktur = () => {
                   </select>
                 </div>
               </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">Jenis Kelamin</label>
+                <div className="flex gap-4">
+                  {genderOptions.map(g => (
+                    <label key={g.value} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        value={g.value}
+                        checked={formData.gender === g.value}
+                        onChange={() => setFormData({...formData, gender: g.value})}
+                        className="w-4 h-4 text-pmi focus:ring-pmi"
+                      />
+                      <span>{g.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
             </div>
 
             <div className="p-5 border-t dark:border-gray-700 flex justify-end gap-3">
-              <button onClick={() => setIsModalOpen(false)} className="px-4 py-2 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+              <button 
+                onClick={() => setIsModalOpen(false)} 
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+              >
                 Batal
               </button>
-              <button onClick={handleSave} className="px-4 py-2 bg-pmi text-white rounded-lg hover:bg-red-700 transition">
-                Simpan
+              <button 
+                onClick={handleSave} 
+                disabled={uploading}
+                className="px-4 py-2 bg-pmi text-white rounded-lg hover:bg-red-700 transition disabled:opacity-50 flex items-center gap-2"
+              >
+                {uploading ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
+                {uploading ? 'Menyimpan...' : 'Simpan'}
               </button>
             </div>
           </div>
