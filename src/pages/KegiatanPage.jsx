@@ -11,6 +11,23 @@ const KegiatanPage = () => {
 
   useEffect(() => {
     fetchKegiatan();
+
+    // ========== REALTIME SUBSCRIPTION ==========
+    const channel = supabase
+      .channel('kegiatan-realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'kegiatan' },
+        () => {
+          console.log('📢 Kegiatan berubah, refresh data...');
+          fetchKegiatan();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchKegiatan = async () => {
@@ -39,6 +56,21 @@ const KegiatanPage = () => {
     const matchCategory = category === 'Semua' || k.kategori === category;
     return matchSearch && matchCategory;
   });
+
+  // ========== CEK APAKAH KEGIATAN TERBARU ==========
+  // Kegiatan terbaru adalah yang memiliki tanggal paling baru
+  const getLatestKegiatan = () => {
+    if (kegiatan.length === 0) return null;
+    // Urutkan berdasarkan tanggal (desc) dan ambil yang pertama
+    const sorted = [...kegiatan].sort((a, b) => {
+      if (!a.tanggal) return 1;
+      if (!b.tanggal) return -1;
+      return new Date(b.tanggal) - new Date(a.tanggal);
+    });
+    return sorted[0] || null;
+  };
+
+  const latestKegiatan = getLatestKegiatan();
 
   const highlightTitle = (title) => {
     if (title.includes("Donor Darah")) {
@@ -90,15 +122,26 @@ const KegiatanPage = () => {
           </div>
         </div>
 
-        {kegiatan.some(k => k.judul.includes('Donor Darah')) && (
-          <div className="mb-8 p-4 bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-900/10 rounded-xl border border-red-200 dark:border-red-800">
+        {/* Badge Kegiatan Terbaru - REALTIME */}
+        {latestKegiatan && (
+          <div className="mb-8 p-4 bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 rounded-xl border border-red-200 dark:border-red-800">
             <div className="flex items-center gap-3">
-              <div className="bg-red-500 p-3 rounded-full">
+              <div className="bg-red-500 p-3 rounded-full animate-pulse">
                 <Heart className="text-white" size={20} />
               </div>
               <div>
-                <p className="font-bold text-red-600 dark:text-red-400">Donor Darah PMI - SMKN 1 Pringgabaya</p>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Kegiatan donor darah pada <span className="font-semibold">2 Januari 2025</span> berhasil mengumpulkan 10+ kantong darah!</p>
+                <p className="font-bold text-red-600 dark:text-red-400 flex items-center gap-2">
+                  🔥 Terbaru
+                  <span className="text-xs font-normal bg-red-100 dark:bg-red-900/30 px-2 py-0.5 rounded-full">
+                    {new Date(latestKegiatan.tanggal).toLocaleDateString('id-ID')}
+                  </span>
+                </p>
+                <p className="text-sm text-gray-700 dark:text-gray-300 font-medium">
+                  {latestKegiatan.judul}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  {latestKegiatan.kategori || 'Kegiatan'} • {latestKegiatan.penulis || 'Admin'}
+                </p>
               </div>
             </div>
           </div>
@@ -112,55 +155,68 @@ const KegiatanPage = () => {
           </div>
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filtered.map((item) => (
-              <div 
-                key={item.id} 
-                onClick={() => setSelectedKegiatan(item)}
-                className="bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer group hover:scale-[1.02]"
-              >
-                <div className="relative overflow-hidden">
-                  {/* Thumbnail dengan ukuran konsisten 600x400 */}
-                  <img 
-                    src={item.thumbnail || 'https://picsum.photos/600/400?random=1'} 
-                    alt={item.judul} 
-                    className="w-full h-56 object-cover group-hover:scale-105 transition duration-500"
-                    onError={(e) => {
-                      e.target.src = 'https://picsum.photos/600/400?random=1';
-                    }}
-                  />
-                  <div className="absolute top-3 right-3">
-                    <span className="px-3 py-1 bg-pmi text-white text-xs font-medium rounded-full">
-                      {item.kategori || 'Umum'}
-                    </span>
-                  </div>
-                  {item.judul.includes("Donor Darah") && (
-                    <div className="absolute top-3 left-3">
-                      <span className="px-3 py-1 bg-red-500 text-white text-xs font-medium rounded-full flex items-center gap-1">
-                        <Droplet size={12} /> Terbaru
+            {filtered.map((item) => {
+              // Cek apakah ini kegiatan terbaru
+              const isLatest = latestKegiatan && item.id === latestKegiatan.id;
+              
+              return (
+                <div 
+                  key={item.id} 
+                  onClick={() => setSelectedKegiatan(item)}
+                  className={`bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer group hover:scale-[1.02] ${
+                    isLatest ? 'border-2 border-red-400 dark:border-red-600' : ''
+                  }`}
+                >
+                  <div className="relative overflow-hidden">
+                    <img 
+                      src={item.thumbnail || 'https://picsum.photos/600/400?random=1'} 
+                      alt={item.judul} 
+                      className="w-full h-56 object-cover group-hover:scale-105 transition duration-500"
+                      onError={(e) => {
+                        e.target.src = 'https://picsum.photos/600/400?random=1';
+                      }}
+                    />
+                    <div className="absolute top-3 right-3 flex gap-2">
+                      <span className="px-3 py-1 bg-pmi text-white text-xs font-medium rounded-full">
+                        {item.kategori || 'Umum'}
                       </span>
                     </div>
-                  )}
-                </div>
-                <div className="p-5">
-                  <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400 mb-2">
-                    <span className="flex items-center gap-1">
-                      <Calendar size={14} /> 
-                      {item.tanggal ? new Date(item.tanggal).toLocaleDateString('id-ID') : '-'}
-                    </span>
-                    {item.penulis && (
-                      <span className="flex items-center gap-1"><User size={14} /> {item.penulis}</span>
+                    {isLatest && (
+                      <div className="absolute top-3 left-3">
+                        <span className="px-3 py-1 bg-red-500 text-white text-xs font-medium rounded-full flex items-center gap-1 animate-pulse">
+                          🔥 Terbaru
+                        </span>
+                      </div>
+                    )}
+                    {item.judul.includes("Donor Darah") && !isLatest && (
+                      <div className="absolute top-3 left-3">
+                        <span className="px-3 py-1 bg-red-500 text-white text-xs font-medium rounded-full flex items-center gap-1">
+                          <Droplet size={12} /> Donor Darah
+                        </span>
+                      </div>
                     )}
                   </div>
-                  <h3 className="text-xl font-bold mb-2 group-hover:text-pmi transition">
-                    {highlightTitle(item.judul)}
-                  </h3>
-                  <p className="text-gray-600 dark:text-gray-400 line-clamp-2">{item.konten}</p>
-                  <button className="mt-4 text-pmi font-semibold flex items-center gap-1 hover:gap-2 transition-all text-sm">
-                    Baca Selengkapnya <ArrowRight size={16} />
-                  </button>
+                  <div className="p-5">
+                    <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400 mb-2">
+                      <span className="flex items-center gap-1">
+                        <Calendar size={14} /> 
+                        {item.tanggal ? new Date(item.tanggal).toLocaleDateString('id-ID') : '-'}
+                      </span>
+                      {item.penulis && (
+                        <span className="flex items-center gap-1"><User size={14} /> {item.penulis}</span>
+                      )}
+                    </div>
+                    <h3 className="text-xl font-bold mb-2 group-hover:text-pmi transition">
+                      {highlightTitle(item.judul)}
+                    </h3>
+                    <p className="text-gray-600 dark:text-gray-400 line-clamp-2">{item.konten}</p>
+                    <button className="mt-4 text-pmi font-semibold flex items-center gap-1 hover:gap-2 transition-all text-sm">
+                      Baca Selengkapnya <ArrowRight size={16} />
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -184,9 +240,14 @@ const KegiatanPage = () => {
               >
                 ✕
               </button>
-              {selectedKegiatan.judul.includes("Donor Darah") && (
+              {selectedKegiatan.id === latestKegiatan?.id && (
                 <div className="absolute bottom-4 left-4 px-3 py-1 bg-red-500 text-white text-xs font-medium rounded-full flex items-center gap-1">
-                  <Droplet size={14} /> Donor Darah - 2 Januari 2025
+                  🔥 Terbaru
+                </div>
+              )}
+              {selectedKegiatan.judul.includes("Donor Darah") && selectedKegiatan.id !== latestKegiatan?.id && (
+                <div className="absolute bottom-4 left-4 px-3 py-1 bg-red-500 text-white text-xs font-medium rounded-full flex items-center gap-1">
+                  <Droplet size={14} /> Donor Darah
                 </div>
               )}
             </div>
