@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Users, Calendar, FileText, Image, TrendingUp, Activity, Plus, LogOut } from 'lucide-react';
+import { Users, Calendar, FileText, Image, TrendingUp, Activity, Plus, LogOut, RefreshCw } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../supabase/client';
 
@@ -12,47 +12,97 @@ const AdminDashboard = () => {
     galeri: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState(new Date());
   const [recentActivities, setRecentActivities] = useState([]);
   const { logout } = useAuth();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    fetchAllData();
-
-    const subscription = supabase
-      .channel('admin-dashboard')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'pengurus' }, () => fetchAllData())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'program_kerja' }, () => fetchAllData())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'kegiatan' }, () => fetchAllData())  
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'galeri' }, () => fetchAllData())
-      .subscribe();
-
-    return () => subscription.unsubscribe();
-  }, []);
-
+  // ========== FETCH DATA ==========
   const fetchAllData = async () => {
     setLoading(true);
     try {
       const [pengurusRes, programRes, kegiatanRes, galeriRes] = await Promise.all([
         supabase.from('pengurus').select('*', { count: 'exact', head: true }),
         supabase.from('program_kerja').select('*', { count: 'exact', head: true }),
-        supabase.from('kegiatan').select('*', { count: 'exact', head: true }),  // 
+        supabase.from('kegiatan').select('*', { count: 'exact', head: true }),
         supabase.from('galeri').select('*', { count: 'exact', head: true }),
       ]);
 
       setStats({
         pengurus: pengurusRes.count || 0,
         program: programRes.count || 0,
-        kegiatan: kegiatanRes.count || 0,  
+        kegiatan: kegiatanRes.count || 0,
         galeri: galeriRes.count || 0,
       });
 
-      const activities = [
-        { action: 'Menambah pengurus baru', time: 'Baru saja', user: 'Admin' },
-        { action: 'Mengupdate program kerja', time: '5 jam lalu', user: 'Admin' },
-        { action: 'Menambah galeri foto', time: '1 hari lalu', user: 'Admin' },
-      ];
-      setRecentActivities(activities);
+      // Fetch recent activities dari semua tabel
+      const activities = [];
+
+      // Ambil 1 aktivitas terbaru dari pengurus
+      const { data: pengurusRecent } = await supabase
+        .from('pengurus')
+        .select('nama, created_at')
+        .order('created_at', { ascending: false })
+        .limit(1);
+      
+      if (pengurusRecent && pengurusRecent.length > 0) {
+        activities.push({
+          action: `Menambah pengurus: ${pengurusRecent[0].nama}`,
+          time: new Date(pengurusRecent[0].created_at),
+          user: 'Admin'
+        });
+      }
+
+      // Ambil 1 aktivitas terbaru dari program
+      const { data: programRecent } = await supabase
+        .from('program_kerja')
+        .select('judul, created_at')
+        .order('created_at', { ascending: false })
+        .limit(1);
+      
+      if (programRecent && programRecent.length > 0) {
+        activities.push({
+          action: `Menambah program: ${programRecent[0].judul}`,
+          time: new Date(programRecent[0].created_at),
+          user: 'Admin'
+        });
+      }
+
+      // Ambil 1 aktivitas terbaru dari kegiatan
+      const { data: kegiatanRecent } = await supabase
+        .from('kegiatan')
+        .select('judul, created_at')
+        .order('created_at', { ascending: false })
+        .limit(1);
+      
+      if (kegiatanRecent && kegiatanRecent.length > 0) {
+        activities.push({
+          action: `Menambah kegiatan: ${kegiatanRecent[0].judul}`,
+          time: new Date(kegiatanRecent[0].created_at),
+          user: 'Admin'
+        });
+      }
+
+      // Ambil 1 aktivitas terbaru dari galeri
+      const { data: galeriRecent } = await supabase
+        .from('galeri')
+        .select('judul, created_at')
+        .order('created_at', { ascending: false })
+        .limit(1);
+      
+      if (galeriRecent && galeriRecent.length > 0) {
+        activities.push({
+          action: `Menambah galeri: ${galeriRecent[0].judul}`,
+          time: new Date(galeriRecent[0].created_at),
+          user: 'Admin'
+        });
+      }
+
+      // Urutkan berdasarkan waktu terbaru dan ambil 3
+      activities.sort((a, b) => b.time - a.time);
+      setRecentActivities(activities.slice(0, 3));
+
+      setLastUpdated(new Date());
 
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -60,6 +110,56 @@ const AdminDashboard = () => {
       setLoading(false);
     }
   };
+
+  // ========== REALTIME SUBSCRIPTION ==========
+  useEffect(() => {
+    // Fetch data pertama kali
+    fetchAllData();
+
+    // Subscribe ke semua tabel yang relevan
+    const channel = supabase
+      .channel('dashboard-realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'pengurus' },
+        () => {
+          console.log('📢 Pengurus berubah, refresh data...');
+          fetchAllData();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'program_kerja' },
+        () => {
+          console.log('📢 Program Kerja berubah, refresh data...');
+          fetchAllData();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'kegiatan' },
+        () => {
+          console.log('📢 Kegiatan berubah, refresh data...');
+          fetchAllData();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'galeri' },
+        () => {
+          console.log('📢 Galeri berubah, refresh data...');
+          fetchAllData();
+        }
+      )
+      .subscribe((status) => {
+        console.log('📡 Realtime status:', status);
+      });
+
+    // Cleanup subscription
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   const handleLogout = async () => {
     await logout();
@@ -88,11 +188,11 @@ const AdminDashboard = () => {
       change: '+8%'
     },
     { 
-      title: 'Kegiatan',              
-      value: stats.kegiatan,          
-      icon: Activity,                 
+      title: 'Kegiatan', 
+      value: stats.kegiatan, 
+      icon: Activity, 
       color: 'bg-yellow-500',
-      path: '/admin/kegiatan',        
+      path: '/admin/kegiatan',
       change: '+5%'
     },
     { 
@@ -104,6 +204,20 @@ const AdminDashboard = () => {
       change: '+10%'
     },
   ];
+
+  // Format waktu relatif
+  const getRelativeTime = (date) => {
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Baru saja';
+    if (diffMins < 60) return `${diffMins} menit lalu`;
+    if (diffHours < 24) return `${diffHours} jam lalu`;
+    return `${diffDays} hari lalu`;
+  };
 
   if (loading) {
     return (
@@ -121,12 +235,18 @@ const AdminDashboard = () => {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Dashboard</h1>
         <div className="flex items-center gap-3">
-          <span className="text-sm text-gray-500">Last updated: {new Date().toLocaleTimeString()}</span>
+          <span className="text-sm text-gray-500 flex items-center gap-1">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+            </span>
+            Last updated: {lastUpdated.toLocaleTimeString()}
+          </span>
           <button
             onClick={fetchAllData}
-            className="px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm hover:bg-gray-200 transition"
+            className="px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm hover:bg-gray-200 transition flex items-center gap-1"
           >
-            🔄 Refresh
+            <RefreshCw size={14} /> Refresh
           </button>
           <button
             onClick={handleLogout}
@@ -167,28 +287,31 @@ const AdminDashboard = () => {
 
       {/* Recent Activity & Quick Actions */}
       <div className="grid lg:grid-cols-2 gap-6">
-        {/* Recent Activity */}
+        {/* Recent Activity - REALTIME */}
         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow">
           <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
             <Activity size={20} className="text-pmi" /> Aktivitas Terbaru
           </h2>
-          <div className="space-y-3">
-            {recentActivities.map((activity, idx) => (
-              <div key={idx} className="flex items-center justify-between py-3 border-b dark:border-gray-700 last:border-0">
-                <div>
-                  <p className="font-medium">{activity.action}</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Oleh {activity.user}</p>
+          {recentActivities.length === 0 ? (
+            <p className="text-gray-500 text-center py-4">Belum ada aktivitas</p>
+          ) : (
+            <div className="space-y-3">
+              {recentActivities.map((activity, idx) => (
+                <div key={idx} className="flex items-center justify-between py-3 border-b dark:border-gray-700 last:border-0">
+                  <div className="flex-1 mr-4">
+                    <p className="font-medium text-gray-800 dark:text-gray-200">{activity.action}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Oleh {activity.user}</p>
+                  </div>
+                  <span className="text-xs text-gray-400 whitespace-nowrap">
+                    {getRelativeTime(activity.time)}
+                  </span>
                 </div>
-                <span className="text-xs text-gray-400">{activity.time}</span>
-              </div>
-            ))}
-            {recentActivities.length === 0 && (
-              <p className="text-gray-500 text-center py-4">Belum ada aktivitas</p>
-            )}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Quick Actions - UPDATE */}
+        {/* Quick Actions */}
         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow">
           <h2 className="text-lg font-semibold mb-4">⚡ Aksi Cepat</h2>
           <div className="grid grid-cols-2 gap-3">
@@ -211,7 +334,7 @@ const AdminDashboard = () => {
               className="flex items-center justify-center gap-2 bg-yellow-500/10 text-yellow-500 p-4 rounded-xl hover:bg-yellow-500 hover:text-white transition-all duration-300 group"
             >
               <Plus size={18} className="group-hover:rotate-90 transition" />
-              Tambah Kegiatan 
+              Tambah Kegiatan
             </button>
             <button
               onClick={() => handleQuickAction('/admin/galeri')}
