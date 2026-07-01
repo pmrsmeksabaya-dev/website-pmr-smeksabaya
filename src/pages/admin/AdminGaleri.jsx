@@ -1,5 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Upload, Trash2, Image as LucideImage, Video, X, Loader2, Plus, FolderOpen, Check, AlertCircle, ChevronLeft, Grid, List } from 'lucide-react';
+import { 
+  Upload, Trash2, Image as LucideImage, Video, X, Loader2, Plus, 
+  FolderOpen, Check, AlertCircle, ChevronLeft, Grid, List, Edit, Save, 
+  FileText, Eye, Pencil 
+} from 'lucide-react';
 import { supabase } from '../../supabase/client';
 
 const AdminGaleri = () => {
@@ -19,9 +23,46 @@ const AdminGaleri = () => {
   const [uploadResults, setUploadResults] = useState([]);
   const [showResults, setShowResults] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
-  const [currentAlbum, setCurrentAlbum] = useState(null); // Untuk view album
-  const [viewMode, setViewMode] = useState('albums'); // 'albums' atau 'photos'
-  const [viewType, setViewType] = useState('grid'); // 'grid' atau 'list'
+  const [currentAlbum, setCurrentAlbum] = useState(null);
+  const [viewMode, setViewMode] = useState('albums');
+  const [viewType, setViewType] = useState('grid');
+  
+  // ========== EDIT DESKRIPSI DENGAN MODAL ==========
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editingAlbum, setEditingAlbum] = useState(null);
+  const [editDescValue, setEditDescValue] = useState('');
+
+  const handleOpenEditModal = (album) => {
+    setEditingAlbum(album);
+    setEditDescValue(album.deskripsi || '');
+    setEditModalOpen(true);
+  };
+
+  const handleCloseEditModal = () => {
+    setEditModalOpen(false);
+    setEditingAlbum(null);
+    setEditDescValue('');
+  };
+
+  const handleSaveDescription = async () => {
+    if (!editingAlbum) return;
+
+    try {
+      const { error } = await supabase
+        .from('album')
+        .update({ deskripsi: editDescValue })
+        .eq('id', editingAlbum.id);
+
+      if (error) throw error;
+
+      alert('Deskripsi album berhasil diupdate!');
+      handleCloseEditModal();
+      fetchData();
+    } catch (error) {
+      console.error('Error updating description:', error);
+      alert('Gagal update deskripsi: ' + error.message);
+    }
+  };
 
   const MAX_FILES = 50;
   const IG_WIDTH = 1080;
@@ -34,7 +75,6 @@ const AdminGaleri = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Fetch albums
       const { data: albumData, error: albumError } = await supabase
         .from('album')
         .select('*')
@@ -43,7 +83,6 @@ const AdminGaleri = () => {
       if (albumError) throw albumError;
       setAlbums(albumData || []);
 
-      // Fetch galeri
       const { data: galeriData, error: galeriError } = await supabase
         .from('galeri')
         .select('*')
@@ -59,18 +98,15 @@ const AdminGaleri = () => {
     }
   };
 
-  // Hitung jumlah item per album
   const getAlbumCount = (albumId) => {
     return galeri.filter(g => g.album_id === albumId).length;
   };
 
-  // Ambil cover album
   const getAlbumCover = (albumId) => {
     const firstItem = galeri.find(g => g.album_id === albumId);
     return firstItem?.url || 'https://picsum.photos/400/400?random=' + albumId;
   };
 
-  // Resize image
   const resizeImage = (file) => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -195,7 +231,6 @@ const AdminGaleri = () => {
       setAlbumDesc('');
       setIsAlbumModalOpen(false);
       
-      // Set album yang baru dibuat sebagai album aktif
       if (data && data.length > 0) {
         setSelectedAlbumId(data[0].id);
       }
@@ -317,7 +352,6 @@ const AdminGaleri = () => {
     }
 
     try {
-      // Hapus semua foto di album
       const photos = galeri.filter(g => g.album_id === albumId);
       for (const photo of photos) {
         await supabase.from('galeri').delete().eq('id', photo.id);
@@ -327,7 +361,6 @@ const AdminGaleri = () => {
         }
       }
 
-      // Hapus album
       const { error } = await supabase.from('album').delete().eq('id', albumId);
       if (error) throw error;
 
@@ -353,7 +386,6 @@ const AdminGaleri = () => {
     setViewMode('albums');
   };
 
-  // Get photos for current album
   const getAlbumPhotos = () => {
     if (!currentAlbum) return [];
     return galeri.filter(g => g.album_id === currentAlbum.id);
@@ -368,7 +400,7 @@ const AdminGaleri = () => {
   }
 
   // ============================================
-  // VIEW: ALBUMS (Seperti galeri HP)
+  // VIEW: ALBUMS
   // ============================================
   if (viewMode === 'albums') {
     return (
@@ -402,7 +434,6 @@ const AdminGaleri = () => {
           </div>
         </div>
 
-        {/* Info */}
         <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
             <LucideImage size={18} className="text-pmi" />
@@ -415,7 +446,6 @@ const AdminGaleri = () => {
           </div>
         </div>
 
-        {/* Album Grid - LIKE HP GALLERY */}
         {albums.length === 0 ? (
           <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600">
             <FolderOpen size={64} className="mx-auto text-gray-400 mb-4" />
@@ -433,13 +463,16 @@ const AdminGaleri = () => {
             {albums.map((album) => {
               const count = getAlbumCount(album.id);
               const cover = getAlbumCover(album.id);
+
               return (
                 <div
                   key={album.id}
-                  onClick={() => openAlbum(album)}
-                  className="group cursor-pointer bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
+                  className="group bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300"
                 >
-                  <div className="relative aspect-square overflow-hidden">
+                  <div 
+                    onClick={() => openAlbum(album)}
+                    className="relative aspect-square overflow-hidden cursor-pointer"
+                  >
                     <img
                       src={cover}
                       alt={album.nama}
@@ -461,8 +494,20 @@ const AdminGaleri = () => {
                     </div>
                   </div>
                   <div className="p-3">
-                    <h3 className="font-semibold text-sm truncate">{album.nama}</h3>
-                    <p className="text-xs text-gray-500">{count} foto</p>
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-semibold text-sm truncate flex-1">{album.nama}</h3>
+                      <button
+                        onClick={() => handleOpenEditModal(album)}
+                        className="p-1 text-gray-400 hover:text-pmi transition opacity-0 group-hover:opacity-100"
+                        title="Edit deskripsi"
+                      >
+                        <Pencil size={14} />
+                      </button>
+                    </div>
+                    <p className="text-xs text-gray-500 truncate mt-0.5">
+                      {album.deskripsi || 'Tidak ada deskripsi'}
+                    </p>
+                    <p className="text-xs text-gray-400 mt-0.5">{count} foto</p>
                   </div>
                 </div>
               );
@@ -513,6 +558,65 @@ const AdminGaleri = () => {
           </div>
         )}
 
+        {/* ========== EDIT DESKRIPSI MODAL ========== */}
+        {editModalOpen && editingAlbum && (
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold flex items-center gap-2">
+                  <Edit size={20} className="text-pmi" />
+                  Edit Deskripsi Album
+                </h2>
+                <button 
+                  onClick={handleCloseEditModal} 
+                  className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="mb-4">
+                <p className="text-sm text-gray-500 mb-1">Album: <span className="font-semibold text-gray-700 dark:text-gray-300">{editingAlbum.nama}</span></p>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+                    Deskripsi
+                  </label>
+                  <textarea
+                    value={editDescValue}
+                    onChange={(e) => setEditDescValue(e.target.value)}
+                    rows={4}
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-pmi bg-white dark:bg-gray-900 text-gray-900 dark:text-white resize-none"
+                    placeholder="Tulis deskripsi album di sini..."
+                    autoFocus
+                  />
+                  <p className="text-xs text-gray-400 mt-1">
+                    {editDescValue.length} karakter
+                  </p>
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    onClick={handleCloseEditModal}
+                    className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    onClick={handleSaveDescription}
+                    className="flex-1 px-4 py-2 bg-pmi text-white rounded-lg hover:bg-red-700 transition flex items-center justify-center gap-2"
+                  >
+                    <Save size={18} />
+                    Simpan
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Modal Upload */}
         {isModalOpen && (
           <UploadModal
@@ -542,7 +646,7 @@ const AdminGaleri = () => {
   }
 
   // ============================================
-  // VIEW: PHOTOS (Isi Album)
+  // VIEW: PHOTOS
   // ============================================
   if (viewMode === 'photos' && currentAlbum) {
     const photos = getAlbumPhotos();
@@ -577,7 +681,6 @@ const AdminGaleri = () => {
           </div>
         </div>
 
-        {/* Album Info */}
         <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
             <LucideImage size={18} className="text-pmi" />
@@ -590,7 +693,6 @@ const AdminGaleri = () => {
           </div>
         </div>
 
-        {/* Photos Grid */}
         {photos.length === 0 ? (
           <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600">
             <LucideImage size={64} className="mx-auto text-gray-400 mb-4" />
@@ -734,7 +836,7 @@ const UploadModal = ({
               >
                 <option value="">Pilih Album</option>
                 {albums.map((a) => (
-                  <option key={a.id} value={a.id}>{a.nama} ({a.nama})</option>
+                  <option key={a.id} value={a.id}>{a.nama}</option>
                 ))}
               </select>
               <button
@@ -749,7 +851,6 @@ const UploadModal = ({
             </div>
           </div>
 
-          {/* Drag & Drop */}
           <div
             className={`border-2 border-dashed rounded-xl p-8 text-center transition ${
               isDragging ? 'border-pmi bg-pmi/5' : 'border-gray-300 dark:border-gray-600'
@@ -778,7 +879,6 @@ const UploadModal = ({
             </label>
           </div>
 
-          {/* Preview */}
           {previews.length > 0 && (
             <div>
               <p className="text-sm font-medium mb-2">{previews.length} file dipilih</p>

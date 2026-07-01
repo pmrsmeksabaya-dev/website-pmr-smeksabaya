@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Camera, Video, LayoutGrid, Image, Clock, Loader2 } from 'lucide-react';
+import { X, Camera, Video, LayoutGrid, Image, Clock, Loader2, ChevronRight } from 'lucide-react';
 import { supabase } from '../supabase/client';
 
 const GaleriPage = () => {
@@ -16,7 +16,6 @@ const GaleriPage = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Fetch albums
       const { data: albumData, error: albumError } = await supabase
         .from('album')
         .select('*')
@@ -25,7 +24,6 @@ const GaleriPage = () => {
       if (albumError) throw albumError;
       setAlbums(albumData || []);
 
-      // Fetch galeri
       const { data: galeriData, error: galeriError } = await supabase
         .from('galeri')
         .select('*')
@@ -41,15 +39,19 @@ const GaleriPage = () => {
     }
   };
 
-  // Hitung jumlah item per album
   const getAlbumCount = (albumId) => {
     return galeri.filter(g => g.album_id === albumId).length;
   };
 
-  // Ambil gambar cover album dari galeri terkait
   const getAlbumCover = (albumId) => {
     const firstItem = galeri.find(g => g.album_id === albumId);
     return firstItem?.url || 'https://picsum.photos/600/400?random=1';
+  };
+
+  const truncateText = (text, maxLength = 30) => {
+    if (!text) return '';
+    if (text.length <= maxLength) return text;
+    return text.slice(0, maxLength) + '...';
   };
 
   if (loading) {
@@ -94,26 +96,41 @@ const GaleriPage = () => {
                 <div 
                   key={album.id} 
                   onClick={() => setSelectedAlbum(album)} 
-                  className="group cursor-pointer"
+                  className="group cursor-pointer bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
                 >
-                  <div className="relative rounded-xl overflow-hidden shadow-lg transition-all duration-300 group-hover:shadow-xl group-hover:scale-[1.02]">
+                  {/* Gambar - Full width, teks di overlay bawah */}
+                  <div className="relative aspect-[4/3] overflow-hidden">
                     <img 
                       src={cover} 
                       alt={album.nama} 
-                      className="w-full h-64 object-cover group-hover:scale-105 transition duration-500" 
+                      className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex items-end p-4">
-                      <div className="text-white">
-                        <h3 className="text-white font-bold text-lg">{album.nama}</h3>
-                        {album.deskripsi && (
-                          <p className="text-white/70 text-sm">{album.deskripsi}</p>
-                        )}
-                        <div className="flex items-center gap-3 mt-2 text-white/60 text-xs">
-                          <span className="flex items-center gap-1">
-                            <Camera size={12} />
-                            {count} item
+                    
+                    {/* Overlay gradient dari bawah */}
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent p-4">
+                      {/* Nama Album - 1 baris dengan truncate */}
+                      <h3 className="text-white font-bold text-lg truncate">
+                        {album.nama}
+                      </h3>
+                      
+                      {/* Deskripsi - 1 baris dengan truncate + Lihat Selengkapnya */}
+                      <div className="flex items-center gap-2 mt-1">
+                        <p className="text-white/80 text-sm truncate flex-1">
+                          {album.deskripsi ? truncateText(album.deskripsi, 35) : `${count} item`}
+                        </p>
+                        {album.deskripsi && album.deskripsi.length > 35 && (
+                          <span className="text-pmi text-xs font-medium flex items-center gap-0.5 whitespace-nowrap">
+                            Lihat Selengkapnya <ChevronRight size={14} />
                           </span>
-                        </div>
+                        )}
+                      </div>
+                      
+                      {/* Item count */}
+                      <div className="flex items-center gap-3 mt-1.5 text-white/60 text-xs">
+                        <span className="flex items-center gap-1">
+                          <Camera size={12} />
+                          {count} item
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -131,7 +148,9 @@ const GaleriPage = () => {
             <div className="sticky top-0 bg-white dark:bg-gray-800 p-4 border-b dark:border-gray-700 flex justify-between items-center">
               <div>
                 <h3 className="text-xl font-bold">{selectedAlbum.nama}</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">{selectedAlbum.deskripsi}</p>
+                {selectedAlbum.deskripsi && (
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{selectedAlbum.deskripsi}</p>
+                )}
               </div>
               <button onClick={() => setSelectedAlbum(null)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition">
                 <X size={24} />
@@ -146,7 +165,9 @@ const GaleriPage = () => {
                     <video src={item.url} className="w-full aspect-[4/5] object-cover" controls />
                   )}
                   {item.judul && (
-                    <p className="text-xs text-center text-gray-600 dark:text-gray-400 mt-1 truncate">{item.judul}</p>
+                    <p className="text-xs text-center text-gray-600 dark:text-gray-400 mt-1 truncate px-1">
+                      {item.judul}
+                    </p>
                   )}
                 </div>
               ))}
