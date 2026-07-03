@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { 
   Upload, Trash2, Image as LucideImage, Video, X, Loader2, Plus, 
   FolderOpen, Check, AlertCircle, ChevronLeft, Grid, List, Edit, Save, 
-  FileText, Eye, Pencil 
+  FileText, Eye, Pencil, PenSquare 
 } from 'lucide-react';
 import { supabase } from '../../supabase/client';
 
@@ -26,14 +26,16 @@ const AdminGaleri = () => {
   const [currentAlbum, setCurrentAlbum] = useState(null);
   const [viewMode, setViewMode] = useState('albums');
   const [viewType, setViewType] = useState('grid');
-  
-  // ========== EDIT DESKRIPSI DENGAN MODAL ==========
+
+  // ========== EDIT MODAL ==========
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editingAlbum, setEditingAlbum] = useState(null);
+  const [editTitleValue, setEditTitleValue] = useState('');
   const [editDescValue, setEditDescValue] = useState('');
 
   const handleOpenEditModal = (album) => {
     setEditingAlbum(album);
+    setEditTitleValue(album.nama || '');
     setEditDescValue(album.deskripsi || '');
     setEditModalOpen(true);
   };
@@ -41,26 +43,34 @@ const AdminGaleri = () => {
   const handleCloseEditModal = () => {
     setEditModalOpen(false);
     setEditingAlbum(null);
+    setEditTitleValue('');
     setEditDescValue('');
   };
 
-  const handleSaveDescription = async () => {
+  const handleSaveEdit = async () => {
     if (!editingAlbum) return;
+    if (!editTitleValue.trim()) {
+      alert('Judul album harus diisi!');
+      return;
+    }
 
     try {
       const { error } = await supabase
         .from('album')
-        .update({ deskripsi: editDescValue })
+        .update({ 
+          nama: editTitleValue.trim(),
+          deskripsi: editDescValue.trim() || null,
+        })
         .eq('id', editingAlbum.id);
 
       if (error) throw error;
 
-      alert('Deskripsi album berhasil diupdate!');
+      alert('Album berhasil diupdate!');
       handleCloseEditModal();
       fetchData();
     } catch (error) {
-      console.error('Error updating description:', error);
-      alert('Gagal update deskripsi: ' + error.message);
+      console.error('Error updating album:', error);
+      alert('Gagal update album: ' + error.message);
     }
   };
 
@@ -494,14 +504,14 @@ const AdminGaleri = () => {
                     </div>
                   </div>
                   <div className="p-3">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between gap-1">
                       <h3 className="font-semibold text-sm truncate flex-1">{album.nama}</h3>
                       <button
                         onClick={() => handleOpenEditModal(album)}
                         className="p-1 text-gray-400 hover:text-pmi transition opacity-0 group-hover:opacity-100"
-                        title="Edit deskripsi"
+                        title="Edit album"
                       >
-                        <Pencil size={14} />
+                        <PenSquare size={14} />
                       </button>
                     </div>
                     <p className="text-xs text-gray-500 truncate mt-0.5">
@@ -512,6 +522,77 @@ const AdminGaleri = () => {
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {/* ========== EDIT ALBUM MODAL (JUDUL + DESKRIPSI) ========== */}
+        {editModalOpen && editingAlbum && (
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold flex items-center gap-2">
+                  <PenSquare size={20} className="text-pmi" />
+                  Edit Album
+                </h2>
+                <button 
+                  onClick={handleCloseEditModal} 
+                  className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+                    Judul Album *
+                  </label>
+                  <input
+                    type="text"
+                    value={editTitleValue}
+                    onChange={(e) => setEditTitleValue(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-pmi bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+                    placeholder="Masukkan judul album..."
+                    autoFocus
+                  />
+                  <p className="text-xs text-gray-400 mt-1">
+                    {editTitleValue.length} karakter
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+                    Deskripsi
+                  </label>
+                  <textarea
+                    value={editDescValue}
+                    onChange={(e) => setEditDescValue(e.target.value)}
+                    rows={3}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-pmi bg-white dark:bg-gray-900 text-gray-900 dark:text-white resize-none"
+                    placeholder="Tulis deskripsi album di sini..."
+                  />
+                  <p className="text-xs text-gray-400 mt-1">
+                    {editDescValue.length} karakter
+                  </p>
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    onClick={handleCloseEditModal}
+                    className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    onClick={handleSaveEdit}
+                    className="flex-1 px-4 py-2 bg-pmi text-white rounded-lg hover:bg-red-700 transition flex items-center justify-center gap-2"
+                  >
+                    <Save size={18} />
+                    Simpan
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
@@ -553,65 +634,6 @@ const AdminGaleri = () => {
                 >
                   Buat Album
                 </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ========== EDIT DESKRIPSI MODAL ========== */}
-        {editModalOpen && editingAlbum && (
-          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold flex items-center gap-2">
-                  <Edit size={20} className="text-pmi" />
-                  Edit Deskripsi Album
-                </h2>
-                <button 
-                  onClick={handleCloseEditModal} 
-                  className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-
-              <div className="mb-4">
-                <p className="text-sm text-gray-500 mb-1">Album: <span className="font-semibold text-gray-700 dark:text-gray-300">{editingAlbum.nama}</span></p>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
-                    Deskripsi
-                  </label>
-                  <textarea
-                    value={editDescValue}
-                    onChange={(e) => setEditDescValue(e.target.value)}
-                    rows={4}
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-pmi bg-white dark:bg-gray-900 text-gray-900 dark:text-white resize-none"
-                    placeholder="Tulis deskripsi album di sini..."
-                    autoFocus
-                  />
-                  <p className="text-xs text-gray-400 mt-1">
-                    {editDescValue.length} karakter
-                  </p>
-                </div>
-
-                <div className="flex gap-3 pt-2">
-                  <button
-                    onClick={handleCloseEditModal}
-                    className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition"
-                  >
-                    Batal
-                  </button>
-                  <button
-                    onClick={handleSaveDescription}
-                    className="flex-1 px-4 py-2 bg-pmi text-white rounded-lg hover:bg-red-700 transition flex items-center justify-center gap-2"
-                  >
-                    <Save size={18} />
-                    Simpan
-                  </button>
-                </div>
               </div>
             </div>
           </div>
