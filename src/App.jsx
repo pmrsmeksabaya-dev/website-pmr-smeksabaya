@@ -21,6 +21,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import { Analytics } from "@vercel/analytics/react"
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import AdminKegiatan from './pages/admin/AdminKegiatan';
+import PendaftaranRedirect from './pages/PendaftaranRedirect';
 
 function App() {
   return (
@@ -39,6 +40,7 @@ function App() {
               <Route path="galeri" element={<GaleriPage />} />
               <Route path="pendaftaran" element={<PendaftaranPage />} />
               <Route path="kontak" element={<KontakPage />} />
+              <Route path="pendaftaran-redirect" element={<PendaftaranRedirect />} />
             </Route>
             
             <Route path="/admin/login" element={<AdminLogin />} />

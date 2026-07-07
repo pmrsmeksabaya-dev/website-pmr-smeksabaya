@@ -24,7 +24,6 @@ const HomePage = () => {
     { title: 'P3K', desc: 'Pelatihan Pertolongan Pertama Pada Kecelakaan' },
   ];
 
-  // Fetch kegiatan dari Supabase
   useEffect(() => {
     fetchKegiatan();
   }, []);
@@ -36,7 +35,7 @@ const HomePage = () => {
         .from('kegiatan')
         .select('*')
         .order('tanggal', { ascending: false })
-        .limit(3); // Ambil 3 kegiatan terbaru
+        .limit(3);
 
       if (error) throw error;
       setKegiatan(data || []);
@@ -62,16 +61,13 @@ const HomePage = () => {
               transition={{ duration: 0.6 }}
               className="flex-1 text-center lg:text-left"
             >
-              {/* Logo di Atas Judul */}
               <div className="flex justify-center lg:justify-start mb-6">
                 <div className="bg-white p-3 md:p-4 rounded-2xl border border-gray-100/80 shadow-premium hover:shadow-premium-hover transition-all duration-300 hover:transform hover:-translate-y-1 hover:scale-[1.02]">
                   <img 
                     src={logoPmr} 
                     alt="PMR Logo" 
                     className="w-16 h-16 md:w-20 md:h-20 object-contain"
-                    style={{
-                      filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.06))'
-                    }}
+                    style={{ filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.06))' }}
                   />
                 </div>
               </div>
@@ -110,9 +106,7 @@ const HomePage = () => {
                     src={logoPmr} 
                     alt="PMR Hero" 
                     className="w-48 h-48 md:w-64 md:h-64 lg:w-80 lg:h-80 object-contain transition-all duration-500 hover:scale-105"
-                    style={{
-                      filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.08))'
-                    }}
+                    style={{ filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.08))' }}
                   />
                   <div className="text-center mt-4">
                     <h2 className="text-lg md:text-xl font-bold bg-gradient-to-r from-pmi to-maroon bg-clip-text text-transparent">
@@ -153,7 +147,7 @@ const HomePage = () => {
         </div>
       </Section>
 
-      {/* Kegiatan Terbaru - DARI SUPABASE */}
+      {/* Kegiatan Terbaru */}
       <Section>
         <h2 className="text-3xl md:text-4xl font-bold text-center mb-6">Kegiatan <span className="text-pmi">Terbaru</span></h2>
         {loadingKegiatan ? (
@@ -173,7 +167,7 @@ const HomePage = () => {
                 title={item.judul} 
                 date={item.tanggal ? new Date(item.tanggal).toLocaleDateString('id-ID') : 'TBA'} 
                 img={item.thumbnail || 'https://picsum.photos/400/250?random=1'}
-                isDonor={item.judul.includes('Donor Darah')}
+                isDonor={item.judul?.includes('Donor Darah')}
               />
             ))}
           </div>
@@ -197,7 +191,7 @@ const Section = ({ children, bg, id }) => (
   </section>
 );
 
-// ✅ FIXED StatCard Component - No more NaN!
+// ✅ FIXED StatCard Component
 const StatCard = ({ icon: Icon, value, label }) => {
   const [ref, inView] = useInView({ triggerOnce: true });
   const [displayValue, setDisplayValue] = useState('0');
@@ -294,14 +288,12 @@ const CTASection = () => (
       <p className="text-white/90 mb-8 max-w-2xl mx-auto">
         Jadilah bagian dari generasi muda yang siap menolong sesama dengan tulus dan ikhlas
       </p>
-      <a
-        href="https://pmrsmeksabaya-daftar.vercel.app/"
-        target="_blank"
-        rel="noopener noreferrer"
+      <Link
+        to="/pendaftaran"
         className="inline-block bg-white text-pmi px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition shadow-lg"
       >
         Daftar Sekarang
-      </a>
+      </Link>
     </div>
   </section>
 );

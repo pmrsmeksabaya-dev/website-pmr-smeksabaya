@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, Sun, Moon, Facebook, Instagram, Youtube, Send, Share2, Heart } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import logoPmr from '../assets/pmr.png';
+import logosmk from '../assets/smk.png';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -48,8 +49,21 @@ const Navbar = () => {
       <div className="container-custom">
         <div className="flex justify-between items-center h-14 md:h-16">
           
-          {/* LOGO */}
+          {/* LOGO - SMK KIRI, PMR KANAN */}
           <Link to="/" className="flex items-center gap-2 group">
+            {/* SMK Logo - KIRI */}
+            <div className="relative">
+              <div className="absolute inset-0 bg-blue-500/20 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition duration-500"></div>
+              <div className="relative">
+                <img 
+                  src={logosmk} 
+                  alt="SMK" 
+                  className="relative h-8 w-8 md:h-10 md:w-10 object-contain transition-all duration-300 group-hover:scale-110" 
+                />
+              </div>
+            </div>
+
+            {/* PMR Logo - KANAN */}
             <div className="relative">
               <div className="absolute inset-0 bg-pmi/20 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition duration-500"></div>
               <div className="relative">
@@ -61,7 +75,8 @@ const Navbar = () => {
               </div>
             </div>
             
-            <div className="hidden md:block">
+            {/* Text */}
+            <div className="hidden md:block ml-1">
               <h1 className="font-bold text-base bg-gradient-to-r from-pmi to-maroon bg-clip-text text-transparent">
                 PMR WIRA
               </h1>

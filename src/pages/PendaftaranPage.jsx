@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ExternalLink, CheckCircle, FileText, Users, Calendar } from 'lucide-react';
+import { CheckCircle, FileText, Users, Calendar, ArrowRight, AlertCircle } from 'lucide-react';
 
 const PendaftaranPage = () => {
   const requirements = [
@@ -88,18 +88,22 @@ const PendaftaranPage = () => {
           </div>
         </div>
 
-        {/* CTA Button */}
+        {/* CTA Button - Arahkan ke halaman redirect */}
         <div className="text-center">
-          <a
-            href="https://pmrsmeksabaya-daftar.vercel.app/"
-            target="_blank"
-            rel="noopener noreferrer"
+          <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-4 mb-6 flex items-center gap-3 justify-center">
+            <AlertCircle className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
+            <p className="text-yellow-700 dark:text-yellow-400 text-sm">
+              Sistem pendaftaran sedang dalam perbaikan
+            </p>
+          </div>
+          <Link
+            to="/pendaftaran-redirect"
             className="inline-flex items-center gap-2 bg-pmi text-white px-8 py-4 rounded-xl font-bold text-lg hover:bg-red-700 transition shadow-lg hover:shadow-xl"
           >
-            Buka Website Pendaftaran <ExternalLink size={20} />
-          </a>
+            Info Pendaftaran <ArrowRight size={20} />
+          </Link>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">
-            Klik tombol di atas untuk mengisi formulir pendaftaran online
+            Klik tombol di atas untuk melihat informasi pendaftaran sementara
           </p>
         </div>
       </div>
