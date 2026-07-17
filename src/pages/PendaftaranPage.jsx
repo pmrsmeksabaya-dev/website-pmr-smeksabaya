@@ -1,14 +1,12 @@
 import { Link } from 'react-router-dom';
-import { CheckCircle, FileText, Users, Calendar, ArrowRight, AlertCircle } from 'lucide-react';
+import { CheckCircle, FileText, Users, Calendar, ExternalLink } from 'lucide-react';
 
 const PendaftaranPage = () => {
   const requirements = [
     'Siswa/i aktif SMKN 1 Pringgabaya',
-    'Kelas X, XI, atau XII',
-    'Memiliki izin orang tua',
-    'Bersedia mengikuti seluruh kegiatan PMR',
+    'Usia 15-18 tahun',
     'Sehat jasmani dan rohani',
-    'Memiliki komitmen tinggi terhadap kemanusiaan',
+    'Bersedia mengikuti seluruh kegiatan PMR',
   ];
 
   const benefits = [
@@ -77,9 +75,10 @@ const PendaftaranPage = () => {
             Pendaftaran dibuka sepanjang tahun ajaran. Gelombang pendaftaran utama:
           </p>
           <div className="flex flex-wrap justify-center gap-4">
-            <div className="bg-white dark:bg-gray-800 rounded-lg px-6 py-3 text-center">
-              <p className="font-semibold">Gelombang 1</p>
-              <p>Juli - Agustus</p>
+            <div className="bg-white dark:bg-gray-800 rounded-lg px-6 py-3 text-center border-2 border-pmi/30">
+              <p className="font-semibold text-pmi">Gelombang 1</p>
+              <p className="text-sm">14 Juli - 8 Agustus 2026</p>
+              <p className="text-xs text-gray-500">Kuota: 100 pendaftar</p>
             </div>
             <div className="bg-white dark:bg-gray-800 rounded-lg px-6 py-3 text-center">
               <p className="font-semibold">Gelombang 2</p>
@@ -88,22 +87,18 @@ const PendaftaranPage = () => {
           </div>
         </div>
 
-        {/* CTA Button - Arahkan ke halaman redirect */}
+        {/* CTA Button - Eksternal */}
         <div className="text-center">
-          <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-4 mb-6 flex items-center gap-3 justify-center">
-            <AlertCircle className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
-            <p className="text-yellow-700 dark:text-yellow-400 text-sm">
-              Sistem pendaftaran sedang dalam perbaikan
-            </p>
-          </div>
-          <Link
-            to="/pendaftaran-redirect"
+          <a
+            href="https://pmrsmeksabaya-daftar.vercel.app/"
+            target="_blank"
+            rel="noopener noreferrer"
             className="inline-flex items-center gap-2 bg-pmi text-white px-8 py-4 rounded-xl font-bold text-lg hover:bg-red-700 transition shadow-lg hover:shadow-xl"
           >
-            Info Pendaftaran <ArrowRight size={20} />
-          </Link>
+            Buka Website Pendaftaran <ExternalLink size={20} />
+          </a>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">
-            Klik tombol di atas untuk melihat informasi pendaftaran sementara
+            Klik tombol di atas untuk mengisi formulir pendaftaran online
           </p>
         </div>
       </div>
