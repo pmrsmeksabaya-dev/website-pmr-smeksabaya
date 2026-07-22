@@ -3,6 +3,12 @@ import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
 import Layout from './layouts/Layout';
 import AdminLayout from './layouts/AdminLayout';
+import ProtectedRoute from './components/ProtectedRoute';
+import ScrollToTop from './components/ScrollToTop';
+import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from '@vercel/speed-insights/react';
+
+// ========== PUBLIC PAGES ==========
 import HomePage from './pages/HomePage';
 import ProfilePage from './pages/ProfilePage';
 import StrukturPage from './pages/StrukturPage';
@@ -11,17 +17,18 @@ import KegiatanPage from './pages/KegiatanPage';
 import GaleriPage from './pages/GaleriPage';
 import PendaftaranPage from './pages/PendaftaranPage';
 import KontakPage from './pages/KontakPage';
+import PendaftaranRedirect from './pages/PendaftaranRedirect';
+
+// ========== ADMIN PAGES ==========
 import AdminLogin from './pages/admin/AdminLogin';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminStruktur from './pages/admin/AdminStruktur';
 import AdminProgram from './pages/admin/AdminProgram';
+import AdminKegiatan from './pages/admin/AdminKegiatan';
 import AdminGaleri from './pages/admin/AdminGaleri';
 import AdminSettings from './pages/admin/AdminSettings';
-import ProtectedRoute from './components/ProtectedRoute';
-import { Analytics } from "@vercel/analytics/react"
-import { SpeedInsights } from '@vercel/speed-insights/react';
-import AdminKegiatan from './pages/admin/AdminKegiatan';
-import PendaftaranRedirect from './pages/PendaftaranRedirect';
+import ForgotPassword from './pages/admin/ForgotPassword';
+import ResetPassword from './pages/admin/ResetPassword';
 
 function App() {
   return (
@@ -30,7 +37,9 @@ function App() {
         <Router>
           <Analytics />
           <SpeedInsights />
+          <ScrollToTop />
           <Routes>
+            {/* ===== PUBLIC ROUTES ===== */}
             <Route path="/" element={<Layout />}>
               <Route index element={<HomePage />} />
               <Route path="profil" element={<ProfilePage />} />
@@ -42,15 +51,20 @@ function App() {
               <Route path="kontak" element={<KontakPage />} />
               <Route path="pendaftaran-redirect" element={<PendaftaranRedirect />} />
             </Route>
-            
+
+            {/* ===== ADMIN AUTH ROUTES ===== */}
             <Route path="/admin/login" element={<AdminLogin />} />
+            <Route path="/admin/forgot-password" element={<ForgotPassword />} />
+            <Route path="/admin/reset-password" element={<ResetPassword />} />
+
+            {/* ===== ADMIN PROTECTED ROUTES ===== */}
             <Route path="/admin" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
               <Route index element={<AdminDashboard />} />
               <Route path="struktur" element={<AdminStruktur />} />
               <Route path="program" element={<AdminProgram />} />
+              <Route path="kegiatan" element={<AdminKegiatan />} />
               <Route path="galeri" element={<AdminGaleri />} />
               <Route path="settings" element={<AdminSettings />} />
-              <Route path="kegiatan" element={<AdminKegiatan />} />
             </Route>
           </Routes>
         </Router>

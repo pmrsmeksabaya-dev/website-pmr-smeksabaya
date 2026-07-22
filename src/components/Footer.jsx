@@ -1,8 +1,12 @@
 import { Link } from 'react-router-dom';
 import { Heart, Facebook, Instagram, Youtube, Send } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
 import PremiumLogo from './PremiumLogo';
 
 const Footer = () => {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
   const socialLinks = [
     { name: 'Facebook', icon: Facebook, url: 'https://www.facebook.com/share/1FnbuMwaff/', bgColor: '#1877f2' },
     { name: 'Instagram', icon: Instagram, url: 'https://www.instagram.com/laspraja_smkn1baya', bgColor: '#e4405f' },
@@ -11,34 +15,67 @@ const Footer = () => {
   ];
 
   return (
-    <footer className="bg-gray-900 text-white pt-12 pb-6">
+    <footer className={`
+      ${isDark ? 'bg-gray-900' : 'bg-gray-50'}
+      border-t ${isDark ? 'border-gray-800' : 'border-gray-200'}
+      pt-12 pb-6 transition-colors duration-300
+    `}>
       <div className="container-custom">
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
-          {/* Logo Section - PAKAI PREMIUM LOGO */}
+          
+          {/* ===== LOGO SECTION ===== */}
           <div>
-            <div className="mb-4">
-              <PremiumLogo size="sm" variant="card" />
+            <div className="mb-4 inline-block">
+              <PremiumLogo 
+                size="sm" 
+                variant="compact"
+                className="shadow-md"
+              />
             </div>
-            <h3 className="font-bold text-lg text-pmi">PMR WIRA</h3>
-            <p className="text-gray-400 text-sm">SMKN 1 Pringgabaya</p>
-            <p className="text-gray-400 text-sm mt-2 italic">"Siap Menolong Sesama Dengan Tulus dan Ikhlas"</p>
+            <h3 className={`font-bold text-lg ${isDark ? 'text-white' : 'text-gray-800'}`}>
+              PMR WIRA
+            </h3>
+            <p className={isDark ? 'text-gray-400' : 'text-gray-500'}>
+              SMKN 1 Pringgabaya
+            </p>
+            <p className={`text-sm mt-2 italic ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+              "Siap Menolong Sesama Dengan Tulus dan Ikhlas"
+            </p>
           </div>
 
-          {/* Quick Links */}
+          {/* ===== QUICK LINKS ===== */}
           <div>
-            <h4 className="font-semibold mb-4 border-l-4 border-pmi pl-3">Tautan Cepat</h4>
-            <ul className="space-y-2 text-gray-400">
-              <li><Link to="/" className="hover:text-pmi transition">Beranda</Link></li>
-              <li><Link to="/profil" className="hover:text-pmi transition">Profil</Link></li>
-              <li><Link to="/struktur-organisasi" className="hover:text-pmi transition">Struktur</Link></li>
-              <li><Link to="/program-kerja" className="hover:text-pmi transition">Program Kerja</Link></li>
-              <li><Link to="/pendaftaran" className="hover:text-pmi transition">Pendaftaran</Link></li>
+            <h4 className={`font-semibold mb-4 border-l-4 border-pmi pl-3 ${
+              isDark ? 'text-white' : 'text-gray-800'
+            }`}>
+              Tautan Cepat
+            </h4>
+            <ul className="space-y-2">
+              {['Beranda', 'Profil', 'Struktur', 'Program Kerja', 'Pendaftaran'].map((label, idx) => {
+                const paths = ['/', '/profil', '/struktur-organisasi', '/program-kerja', '/pendaftaran'];
+                return (
+                  <li key={idx}>
+                    <Link 
+                      to={paths[idx]}
+                      className={`transition hover:text-pmi ${
+                        isDark ? 'text-gray-400 hover:text-pmi' : 'text-gray-500 hover:text-pmi'
+                      }`}
+                    >
+                      {label}
+                    </Link>
+                  </li>
+                );
+              })}
             </ul>
           </div>
 
-          {/* Social Media */}
+          {/* ===== SOCIAL MEDIA ===== */}
           <div>
-            <h4 className="font-semibold mb-4 border-l-4 border-pmi pl-3">Media Sosial</h4>
+            <h4 className={`font-semibold mb-4 border-l-4 border-pmi pl-3 ${
+              isDark ? 'text-white' : 'text-gray-800'
+            }`}>
+              Media Sosial
+            </h4>
             <div className="space-y-2">
               {socialLinks.map((social, idx) => (
                 <a
@@ -46,29 +83,50 @@ const Footer = () => {
                   href={social.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-800 transition group"
+                  className={`flex items-center gap-3 p-2 rounded-lg transition group ${
+                    isDark ? 'hover:bg-gray-800' : 'hover:bg-gray-100'
+                  }`}
                 >
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: social.bgColor }}>
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: social.bgColor }}>
                     <social.icon size={14} className="text-white" />
                   </div>
-                  <span className="text-gray-400 group-hover:text-white transition">{social.name}</span>
+                  <span className={`transition ${
+                    isDark ? 'text-gray-400 group-hover:text-white' : 'text-gray-500 group-hover:text-gray-800'
+                  }`}>
+                    {social.name}
+                  </span>
                 </a>
               ))}
             </div>
           </div>
 
-          {/* Contact */}
+          {/* ===== CONTACT ===== */}
           <div>
-            <h4 className="font-semibold mb-4 border-l-4 border-pmi pl-3">Kontak</h4>
-            <p className="text-gray-400 text-sm">SMKN 1 Pringgabaya</p>
-            <p className="text-gray-400 text-sm">Jl. Raya Mataram - Labuhan Lombok No.KM.3, Pringgabaya Utara,
-Kec. Pringgabaya, Kabupaten Lombok Timur, Nusa Tenggara Barat.</p>
-            <p className="text-gray-400 text-sm mt-2">WhatsApp: +62 859 7433 5511</p>
+            <h4 className={`font-semibold mb-4 border-l-4 border-pmi pl-3 ${
+              isDark ? 'text-white' : 'text-gray-800'
+            }`}>
+              Kontak
+            </h4>
+            <p className={isDark ? 'text-gray-400' : 'text-gray-500'}>
+              SMKN 1 Pringgabaya
+            </p>
+            <p className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+              Jl. Raya Mataram - Labuhan Lombok No.KM.3, Pringgabaya Utara, Kec. Pringgabaya, Kabupaten Lombok Timur, Nusa Tenggara Barat.
+            </p>
+            <p className={`text-sm mt-2 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+              WhatsApp: <a href="https://wa.me/6285974335511" className="hover:text-pmi transition">+62 859 7433 5511</a>
+            </p>
           </div>
         </div>
 
-        <div className="border-t border-gray-800 pt-6 text-center text-gray-400 text-sm">
-          <p>&copy; 2026 PMR Wira Unit SMKN 1 Pringgabaya. Made with <Heart size={14} className="inline text-pmi" /> for humanity.</p>
+        {/* ===== BOTTOM ===== */}
+        <div className={`border-t pt-6 text-center text-sm ${
+          isDark ? 'border-gray-800 text-gray-500' : 'border-gray-200 text-gray-400'
+        }`}>
+          <p>
+            &copy; {new Date().getFullYear()} PMR Wira Unit SMKN 1 Pringgabaya. 
+            Made with <Heart size={14} className="inline text-pmi" /> for humanity.
+          </p>
         </div>
       </div>
     </footer>
