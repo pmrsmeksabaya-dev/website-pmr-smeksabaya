@@ -1,6 +1,6 @@
 // src/pages/admin/ResetPassword.jsx
 import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom'; // <-- Link di sini
+import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Heart, Loader2, Eye, EyeOff, CheckCircle, AlertCircle, ArrowLeft } from 'lucide-react';
 import { supabase } from '../../supabase/client';
@@ -23,6 +23,9 @@ const ResetPassword = () => {
   useEffect(() => {
     const checkSession = async () => {
       const { data, error } = await supabase.auth.getSession();
+      
+      console.log('🔐 Session check:', data?.session ? '✅ Valid' : '❌ Invalid');
+      
       if (error || !data.session) {
         setIsValidToken(false);
         setError('Link reset password tidak valid atau sudah kadaluarsa.');
@@ -31,6 +34,7 @@ const ResetPassword = () => {
     checkSession();
   }, []);
 
+  // ========== VALIDASI ==========
   const validate = () => {
     const newErrors = {};
     if (!password) newErrors.password = 'Password wajib diisi';
@@ -43,6 +47,7 @@ const ResetPassword = () => {
     return Object.keys(newErrors).length === 0;
   };
 
+  // ========== SUBMIT ==========
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -53,6 +58,8 @@ const ResetPassword = () => {
     try {
       await resetPassword(password);
       setSuccess(true);
+      
+      // Redirect ke login setelah 3 detik
       setTimeout(() => {
         navigate('/admin/login');
       }, 3000);
@@ -78,18 +85,31 @@ const ResetPassword = () => {
   const strengthLabels = ['Sangat Lemah', 'Lemah', 'Sedang', 'Kuat', 'Sangat Kuat'];
   const strengthColors = ['bg-red-500', 'bg-orange-500', 'bg-yellow-500', 'bg-green-500', 'bg-emerald-500'];
 
+  // ========== LOADING ==========
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 text-pmi animate-spin mx-auto" />
+          <p className="mt-4 text-gray-500">Memproses...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // ========== TOKEN TIDAK VALID ==========
   if (!isValidToken) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pmi/20 via-white to-white dark:via-gray-900 dark:to-gray-900 p-4">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 p-4">
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-8 text-center"
+          className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl max-w-md w-full p-8 text-center"
         >
           <div className="w-20 h-20 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
             <AlertCircle className="w-10 h-10 text-red-500" />
           </div>
-          <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-2">
+          <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">
             Link Tidak Valid
           </h2>
           <p className="text-gray-600 dark:text-gray-400 mb-6">
@@ -107,36 +127,25 @@ const ResetPassword = () => {
     );
   }
 
+  // ========== FORM RESET PASSWORD ==========
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pmi/20 via-white to-white dark:via-gray-900 dark:to-gray-900 p-4">
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-pmi/10 rounded-full blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-maroon/10 rounded-full blur-3xl" />
-      </div>
-
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 p-4">
       <motion.div
-        initial={{ opacity: 0, y: 30 }}
+        initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, type: 'spring', stiffness: 100 }}
-        className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-8 relative z-10 border border-gray-100 dark:border-gray-700"
+        className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl max-w-md w-full p-8"
       >
         {/* Header */}
         <div className="text-center mb-8">
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ type: 'spring', stiffness: 200, delay: 0.1 }}
-            className="w-20 h-20 bg-gradient-to-br from-pmi/20 to-maroon/20 rounded-full flex items-center justify-center mx-auto mb-4"
-          >
+          <div className="w-20 h-20 bg-pmi/10 rounded-full flex items-center justify-center mx-auto mb-4">
             <Heart className="w-10 h-10 text-pmi" />
-          </motion.div>
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-pmi to-maroon bg-clip-text text-transparent">
+          </div>
+          <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
             Reset Password
           </h1>
-          <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">
+          <p className="text-gray-600 dark:text-gray-400 mt-1">
             Buat password baru untuk akun Anda
           </p>
-          <div className="w-12 h-1 bg-gradient-to-r from-pmi to-maroon mx-auto mt-3 rounded-full" />
         </div>
 
         <form onSubmit={handleSubmit}>
@@ -162,7 +171,7 @@ const ResetPassword = () => {
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 p-3 rounded-lg mb-4 flex items-center gap-2"
+              className="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 p-3 rounded-lg mb-4 flex items-center gap-2 text-sm"
             >
               <AlertCircle className="w-5 h-5 flex-shrink-0" />
               <span>{error}</span>
@@ -200,9 +209,7 @@ const ResetPassword = () => {
               </button>
             </div>
             {errors.password && (
-              <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                <span>⚠️</span> {errors.password}
-              </p>
+              <p className="text-red-500 text-xs mt-1">{errors.password}</p>
             )}
 
             {/* Password Strength */}
@@ -261,22 +268,18 @@ const ResetPassword = () => {
               </button>
             </div>
             {errors.confirmPassword && (
-              <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                <span>⚠️</span> {errors.confirmPassword}
-              </p>
+              <p className="text-red-500 text-xs mt-1">{errors.confirmPassword}</p>
             )}
           </div>
 
           {/* Submit Button */}
-          <motion.button
+          <button
             type="submit"
             disabled={loading || success}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
             className={`w-full py-2.5 rounded-lg font-semibold transition flex items-center justify-center gap-2 ${
               success
                 ? 'bg-green-500 text-white cursor-default'
-                : 'bg-gradient-to-r from-pmi to-red-600 text-white hover:shadow-lg'
+                : 'bg-pmi text-white hover:bg-red-700'
             } disabled:opacity-50 disabled:cursor-not-allowed`}
           >
             {loading ? (
@@ -292,15 +295,15 @@ const ResetPassword = () => {
             ) : (
               'Simpan Password Baru'
             )}
-          </motion.button>
+          </button>
 
           {/* Back to Login */}
           <div className="mt-4 text-center">
             <Link 
               to="/admin/login" 
-              className="inline-flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400 hover:text-pmi transition group"
+              className="inline-flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400 hover:text-pmi transition"
             >
-              <ArrowLeft size={16} className="group-hover:-translate-x-0.5 transition" />
+              <ArrowLeft size={16} />
               Kembali ke Login
             </Link>
           </div>

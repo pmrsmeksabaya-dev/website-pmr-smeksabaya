@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../../supabase/client';
 
+
 const AdminStruktur = () => {
   const [members, setMembers] = useState([]);
   const [search, setSearch] = useState('');
@@ -17,6 +18,7 @@ const AdminStruktur = () => {
   const [activeTab, setActiveTab] = useState('resmi');
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState(null);
   const [formData, setFormData] = useState({
     nama: '',
     jabatan: 'Anggota',
@@ -548,70 +550,71 @@ const AdminStruktur = () => {
               <div className="p-4 sm:p-5 space-y-3 sm:space-y-4">
                 {/* Foto Upload */}
                 <div>
-                  <label className="block text-sm font-medium mb-2">Foto Profil</label>
-                  <div className="flex flex-col xs:flex-row items-center gap-4">
-                    <div className="relative">
-                      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center overflow-hidden border-2 border-pmi/30">
-                        {formData.fotoFile ? (
-                          <img 
-                            src={URL.createObjectURL(formData.fotoFile)} 
-                            alt="Preview" 
-                            className="w-full h-full object-cover"
-                          />
-                        ) : formData.foto ? (
-                          <img 
-                            src={formData.foto} 
-                            alt="Foto" 
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              e.target.style.display = 'none';
-                            }}
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <Camera className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400" />
-                          </div>
-                        )}
-                      </div>
-                      <label className="absolute -bottom-1 -right-1 p-1.5 bg-pmi text-white rounded-full cursor-pointer hover:bg-red-700 transition shadow-lg">
-                        <Camera size={12} />
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => {
-                            const file = e.target.files[0];
-                            if (file) {
-                              setFormData({ ...formData, fotoFile: file });
-                            }
-                          }}
-                          className="hidden"
-                        />
-                      </label>
-                    </div>
-                    <div className="text-center xs:text-left">
-                      <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">
-                        Klik ikon kamera untuk upload
-                      </p>
-                      <p className="text-[10px] text-gray-400">Format: JPG, PNG • Max 2MB</p>
-                      {formData.foto && !formData.fotoFile && (
-                        <button
-                          onClick={() => setFormData({ ...formData, foto: null })}
-                          className="text-[10px] sm:text-xs text-red-500 hover:text-red-700 mt-1"
-                        >
-                          Hapus foto
-                        </button>
-                      )}
-                      {formData.fotoFile && (
-                        <button
-                          onClick={() => setFormData({ ...formData, fotoFile: null })}
-                          className="text-[10px] sm:text-xs text-red-500 hover:text-red-700 mt-1"
-                        >
-                          Batal pilih foto
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
+  <label className="block text-sm font-medium mb-2">Foto Profil</label>
+  <div className="flex flex-col xs:flex-row items-center gap-4">
+    <div className="relative">
+      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center overflow-hidden border-2 border-pmi/30">
+        {photoPreview ? (
+          <img 
+            src={photoPreview} 
+            alt="Preview" 
+            className="w-full h-full object-cover"
+          />
+        ) : formData.foto ? (
+          <img 
+            src={formData.foto} 
+            alt="Foto" 
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              e.target.style.display = 'none';
+            }}
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center">
+            <Camera className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400" />
+          </div>
+        )}
+      </div>
+      <label className="absolute -bottom-1 -right-1 p-1.5 bg-pmi text-white rounded-full cursor-pointer hover:bg-red-700 transition shadow-lg">
+        <Camera size={12} />
+        <input
+          type="file"
+          accept="image/*"
+          onChange={(e) => {
+            const file = e.target.files[0];
+            if (file) {
+              setFormData({ ...formData, fotoFile: file });
+              const reader = new FileReader();
+              reader.onload = (event) => {
+                setPhotoPreview(event.target.result);
+              };
+              reader.readAsDataURL(file);
+            }
+          }}
+          className="hidden"
+        />
+      </label>
+    </div>
+    <div className="text-center xs:text-left">
+      <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">
+        Klik ikon kamera untuk upload
+      </p>
+      <p className="text-[10px] text-gray-400">Format: JPG, PNG • Max 2MB</p>
+      {(photoPreview || formData.foto) && (
+        <button
+          type="button"
+          onClick={() => {
+            setPhotoPreview(null);
+            setFormData({ ...formData, foto: null, fotoFile: null });
+          }}
+          className="text-[10px] sm:text-xs text-red-500 hover:text-red-700 mt-1"
+        >
+          🗑️ Hapus foto
+        </button>
+      )}
+    </div>
+  </div>
+</div>
 
                 <div>
                   <label className="block text-sm font-medium mb-1">Nama Lengkap *</label>

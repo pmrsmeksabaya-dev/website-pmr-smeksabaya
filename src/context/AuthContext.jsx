@@ -72,6 +72,20 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
+  // ========== GET APP URL ==========
+  const getAppUrl = () => {
+    // Cek environment
+    const isProduction = import.meta.env.PROD;
+    
+    // Kalo production, pake URL dari env atau domain Vercel
+    if (isProduction) {
+      return import.meta.env.VITE_APP_URL || 'https://pmr-smeksabaya.vercel.app';
+    }
+    
+    // Kalo development, pake localhost
+    return 'http://localhost:5173';
+  };
+
   // ========== LOGIN ==========
   const login = async (email, password) => {
     try {
@@ -100,11 +114,40 @@ export function AuthProvider({ children }) {
     }
   };
 
+  // ========== MAGIC LINK (LOGIN TANPA PASSWORD) ==========
+  const sendMagicLink = async (email) => {
+    try {
+      const appUrl = getAppUrl();
+      const redirectUrl = `${appUrl}/admin`;
+      
+      console.log('📧 Sending magic link to:', email);
+      console.log('🔗 Redirect URL:', redirectUrl);
+      
+      const { error } = await supabase.auth.signInWithOtp({
+        email: email,
+        options: {
+          emailRedirectTo: redirectUrl,
+        },
+      });
+      if (error) throw error;
+      return true;
+    } catch (error) {
+      console.error('Magic link error:', error);
+      throw error;
+    }
+  };
+
   // ========== FORGOT PASSWORD ==========
   const forgotPassword = async (email) => {
     try {
+      const appUrl = getAppUrl();
+      const redirectUrl = `${appUrl}/admin/reset-password`;
+      
+      console.log('📧 Sending reset password to:', email);
+      console.log('🔗 Redirect URL:', redirectUrl);
+      
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/admin/reset-password`,
+        redirectTo: redirectUrl,
       });
       if (error) throw error;
       return true;
@@ -147,6 +190,7 @@ export function AuthProvider({ children }) {
       loading,
       login,
       logout,
+      sendMagicLink,
       forgotPassword,
       resetPassword,
       updateProfile,
