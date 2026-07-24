@@ -29,6 +29,7 @@ import AdminGaleri from './pages/admin/AdminGaleri';
 import AdminSettings from './pages/admin/AdminSettings';
 import ForgotPassword from './pages/admin/ForgotPassword';
 import ResetPassword from './pages/admin/ResetPassword';
+import AdminPesan from './pages/admin/AdminPesan';
 
 function App() {
   return (
@@ -64,6 +65,7 @@ function App() {
               <Route path="program" element={<AdminProgram />} />
               <Route path="kegiatan" element={<AdminKegiatan />} />
               <Route path="galeri" element={<AdminGaleri />} />
+              <Route path="/admin/pesan" element={<AdminPesan />} />
               <Route path="settings" element={<AdminSettings />} />
             </Route>
           </Routes>

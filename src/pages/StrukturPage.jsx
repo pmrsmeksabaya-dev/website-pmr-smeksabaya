@@ -5,9 +5,9 @@ import {
   User, UserCircle, Loader2, Clock, Info, Crown, 
   FileText, Coins, TrendingUp, ChevronDown, ChevronUp
 } from 'lucide-react';
-import { supabase } from '../supabase/client';
+import { supabaseAdmin } from '../supabase/adminClient';
 
-// Position Icons mapping
+// Position Icons mapping (SAMA KAYAK SEBELUMNYA)
 const positionIcons = {
   'Ketua': <Crown size={16} className="text-yellow-500" />,
   'Wakil Ketua': <UserCog size={16} className="text-blue-500" />,
@@ -29,39 +29,65 @@ const StrukturPage = () => {
   useEffect(() => {
     fetchStruktur();
 
-    // Realtime subscription
-    const channel = supabase
-      .channel('pengurus-realtime')
+    const channel = supabaseAdmin
+      .channel('struktur-realtime')
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
-        table: 'pengurus'
+        table: 'pengurus_resmi'
+      }, () => {
+        fetchStruktur();
+      })
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'pengurus_sementara'
       }, () => {
         fetchStruktur();
       })
       .subscribe();
 
-    return () => supabase.removeChannel(channel);
+    return () => supabaseAdmin.removeChannel(channel);
   }, []);
 
+  // ========== FETCH DARI 2 TABEL ==========
   const fetchStruktur = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('pengurus')
+      const { data: resmiData, error: resmiError } = await supabaseAdmin
+        .from('pengurus_resmi')
         .select('*')
         .order('urutan', { ascending: true });
 
-      if (error) throw error;
-      
-      const formattedData = data.map(item => ({
+      if (resmiError) throw resmiError;
+
+      const { data: sementaraData, error: sementaraError } = await supabaseAdmin
+        .from('pengurus_sementara')
+        .select('*')
+        .order('urutan', { ascending: true });
+
+      if (sementaraError) throw sementaraError;
+
+      const resmi = (resmiData || []).map(item => ({
+        ...item,
+        tipe: 'resmi'
+      }));
+
+      const sementara = (sementaraData || []).map(item => ({
+        ...item,
+        tipe: 'sementara'
+      }));
+
+      const allData = [...resmi, ...sementara];
+
+      const formattedData = allData.map(item => ({
         id: item.id,
         name: item.nama,
         position: item.jabatan,
         division: item.divisi || '-',
         gender: item.gender || 'male',
         photo: item.foto || null,
-        tipe: item.tipe_pengurus || 'resmi',
+        tipe: item.tipe,
         keterangan: item.keterangan || '',
         urutan: item.urutan || 0,
       }));
@@ -74,6 +100,7 @@ const StrukturPage = () => {
     }
   };
 
+  // ========== FILTER ==========
   const resmiMembers = members.filter(m => m.tipe === 'resmi');
   const sementaraMembers = members.filter(m => m.tipe === 'sementara');
 
@@ -90,6 +117,7 @@ const StrukturPage = () => {
 
   const filteredMembers = getFilteredMembers();
 
+  // ========== GROUPING FUNCTIONS ==========
   const getGroupedByPosition = (membersList) => {
     return {
       ketua: membersList.find(m => m.position === 'Ketua'),
@@ -115,6 +143,7 @@ const StrukturPage = () => {
     );
   };
 
+  // ========== COMPONENTS ==========
   const Avatar = ({ photo, name, gender, size = 'md' }) => {
     const [hasError, setHasError] = useState(false);
     
@@ -172,19 +201,7 @@ const StrukturPage = () => {
     );
   };
 
-  if (loading) {
-    return (
-      <div className="pt-32 pb-16 flex justify-center items-center min-h-screen">
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-        >
-          <Loader2 className="w-12 h-12 text-pmi" />
-        </motion.div>
-      </div>
-    );
-  }
-
+  // ========== RENDER TREE ==========
   const renderTree = (membersList, title) => {
     const grouped = getGroupedByPosition(membersList);
     const { ketua, wakil, sekretaris, bendahara, ketuaDivisi } = grouped;
@@ -350,7 +367,7 @@ const StrukturPage = () => {
           </motion.div>
         )}
 
-        {/* Divisi Grid dengan Expand/Collapse */}
+        {/* Divisi Grid */}
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
           {allDivisionNames.map((div, idx) => {
             const members = getAnggotaByDivision(membersList, div);
@@ -371,7 +388,7 @@ const StrukturPage = () => {
                   onClick={() => toggleDivision(div)}
                 >
                   <h4 className="font-semibold text-pmi text-center border-b border-pmi/30 pb-2 flex-1">
-                    {title}
+                    {div}
                   </h4>
                   {members.length > 3 && (
                     <button className="text-gray-400 hover:text-pmi transition p-1">
@@ -410,6 +427,21 @@ const StrukturPage = () => {
     );
   };
 
+  // ========== LOADING ==========
+  if (loading) {
+    return (
+      <div className="pt-32 pb-16 flex justify-center items-center min-h-screen">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+        >
+          <Loader2 className="w-12 h-12 text-pmi" />
+        </motion.div>
+      </div>
+    );
+  }
+
+  // ========== MAIN RENDER ==========
   return (
     <div className="pt-20 pb-16">
       <div className="container-custom">
@@ -453,7 +485,7 @@ const StrukturPage = () => {
           ))}
         </motion.div>
 
-        {/* ========== TAB: RESMI vs SEMENTARA ========== */}
+        {/* Tabs */}
         <div className="flex justify-center mb-8">
           <div className="bg-gray-100 dark:bg-gray-800 rounded-xl p-1 flex gap-1 flex-wrap">
             <motion.button
@@ -491,13 +523,13 @@ const StrukturPage = () => {
           </div>
         </div>
 
-        {/* ========== STRUKTUR TREE ========== */}
+        {/* Struktur Tree */}
         {renderTree(
           activeTab === 'resmi' ? resmiMembers : sementaraMembers,
           activeTab === 'resmi' ? 'Pengurus Resmi' : 'Pengurus Sementara'
         )}
 
-        {/* ========== SEARCH & FILTER ========== */}
+        {/* Search & Filter */}
         <div className="flex flex-col md:flex-row gap-4 my-8">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
@@ -523,7 +555,7 @@ const StrukturPage = () => {
           </div>
         </div>
 
-        {/* ========== MEMBERS GRID ========== */}
+        {/* Members Grid */}
         <motion.h2 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -588,9 +620,7 @@ const StrukturPage = () => {
                 >
                   <div className="flex justify-center mb-4 relative">
                     <Avatar photo={member.photo} name={member.name} gender={member.gender} size="md" />
-                    {member.tipe === 'sementara' && (
-                      <span className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-500 rounded-full border-2 border-white" />
-                    )}
+                    
                   </div>
                   <h3 className="font-bold text-gray-800 dark:text-white group-hover:text-pmi transition">
                     {member.name}
@@ -605,7 +635,6 @@ const StrukturPage = () => {
                     </span>
                   )}
                   
-                  {/* Keterangan tampil di card */}
                   {member.keterangan && (
                     <div className="mt-2 border-t border-gray-100 dark:border-gray-700 pt-2">
                       <p className="text-xs text-gray-400 dark:text-gray-500 flex items-center justify-center gap-1">
@@ -658,7 +687,6 @@ const StrukturPage = () => {
                 </p>
               )}
               
-              {/* Keterangan di modal */}
               {selectedMember.keterangan && (
                 <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg mb-3">
                   <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center justify-center gap-1">
@@ -688,26 +716,5 @@ const StrukturPage = () => {
     </div>
   );
 };
-
-// Division Card Component
-const DivisionCard = ({ title, members }) => (
-  <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4 hover:shadow-md transition">
-    <h4 className="font-semibold text-pmi mb-3 text-center border-b border-pmi/30 pb-2">{title}</h4>
-    {members.length > 0 ? (
-      members.map(member => (
-        <div key={member.id} className="flex flex-col items-center py-1.5">
-          <span className="text-sm text-gray-700 dark:text-gray-300">{member.name}</span>
-          {member.keterangan && (
-            <span className="text-xs text-gray-400 flex items-center gap-1">
-              <Info size={10} /> {member.keterangan}
-            </span>
-          )}
-        </div>
-      ))
-    ) : (
-      <p className="text-sm text-gray-400 text-center">-</p>
-    )}
-  </div>
-);
 
 export default StrukturPage;

@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Facebook, Instagram, Youtube, Send, MapPin, Phone, 
   Mail, Globe, Clock, MessageSquare, CheckCircle, 
-  Loader2, Navigation, ThumbsUp
+  Loader2, Navigation, ThumbsUp, Eye, Shield, User
 } from 'lucide-react';
 import { supabase } from '../supabase/client';
 
@@ -43,19 +43,25 @@ const KontakPage = () => {
   const [isSending, setIsSending] = useState(false);
   const [isSent, setIsSent] = useState(false);
   const [error, setError] = useState('');
+  const [isAnonim, setIsAnonim] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSending(true);
     setError('');
     try {
+      // KALO ANONIM, NAME & EMAIL DIKOSONGIN
+      const dataToSend = {
+        nama: isAnonim ? 'Anonim' : formData.name,
+        email: isAnonim ? 'anonim@pmr.com' : formData.email,
+        pesan: formData.message,
+        is_anonim: isAnonim,
+        status: 'baru',
+      };
+
       const { error } = await supabase
         .from('pesan')
-        .insert([{ 
-          nama: formData.name, 
-          email: formData.email, 
-          pesan: formData.message 
-        }]);
+        .insert([dataToSend]);
       
       if (error) throw error;
       
@@ -88,47 +94,47 @@ const KontakPage = () => {
           </p>
         </motion.div>
 
+        {/* Social Media */}
         <motion.div
-  initial={{ opacity: 0, y: 20 }}
-  animate={{ opacity: 1, y: 0 }}
-  transition={{ delay: 0.1 }}
-  className="mb-12"
->
-  <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-    <span>📱</span> Media Sosial Resmi
-  </h2>
-  <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-    {socialMedia.map((social, idx) => (
-      <motion.a
-        key={idx}
-        href={social.url}
-        target="_blank"
-        rel="noopener noreferrer"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: idx * 0.1 }}
-        whileHover={{ y: -8, scale: 1.03 }}
-        whileTap={{ scale: 0.95 }}
-        className="group bg-white dark:bg-gray-800 rounded-xl p-6 text-center shadow-lg hover:shadow-xl transition-all"
-      >
-        <div 
-          className="w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4 transition-all group-hover:scale-110"
-          style={{ backgroundColor: social.color }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="mb-12"
         >
-          <social.icon className="w-8 h-8 text-white" />
-        </div>
-        <h3 className="font-bold text-lg mb-1">{social.name}</h3>
-        <p className="text-sm text-gray-600 dark:text-gray-400 break-all line-clamp-1">
-          {social.username}
-        </p>
-        {/* ← BARIS followers DIHAPUS DARI SINI */}
-        <p className="text-pmi text-sm mt-2 font-semibold group-hover:underline">
-          Kunjungi →
-        </p>
-      </motion.a>
-    ))}
-  </div>
-</motion.div>
+          <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+            <span>📱</span> Media Sosial Resmi
+          </h2>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {socialMedia.map((social, idx) => (
+              <motion.a
+                key={idx}
+                href={social.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: idx * 0.1 }}
+                whileHover={{ y: -8, scale: 1.03 }}
+                whileTap={{ scale: 0.95 }}
+                className="group bg-white dark:bg-gray-800 rounded-xl p-6 text-center shadow-lg hover:shadow-xl transition-all"
+              >
+                <div 
+                  className="w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4 transition-all group-hover:scale-110"
+                  style={{ backgroundColor: social.color }}
+                >
+                  <social.icon className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="font-bold text-lg mb-1">{social.name}</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 break-all line-clamp-1">
+                  {social.username}
+                </p>
+                <p className="text-pmi text-sm mt-2 font-semibold group-hover:underline">
+                  Kunjungi →
+                </p>
+              </motion.a>
+            ))}
+          </div>
+        </motion.div>
 
         {/* Info Sekolah & Maps */}
         <div className="grid lg:grid-cols-2 gap-8">
@@ -255,8 +261,42 @@ const KontakPage = () => {
             <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg hover:shadow-xl transition">
               <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
                 <MessageSquare className="text-pmi" /> Kirim Pesan
+                <span className="ml-auto text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full flex items-center gap-1">
+                  <Shield size={12} /> Aman & Terenkripsi
+                </span>
               </h2>
               
+              {/* ANONIM TOGGLE */}
+              <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-700/30 rounded-lg flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <User size={16} className="text-gray-500" />
+                  <span className="text-sm font-medium">Kirim sebagai Anonim</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsAnonim(!isAnonim)}
+                  className={`relative w-12 h-6 rounded-full transition ${
+                    isAnonim ? 'bg-pmi' : 'bg-gray-300 dark:bg-gray-600'
+                  }`}
+                >
+                  <span
+                    className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${
+                      isAnonim ? 'translate-x-6' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {isAnonim && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mb-4 p-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-xs rounded-lg flex items-center gap-2"
+                >
+                  <Shield size={14} /> Identitas Anda tidak akan terlihat oleh admin
+                </motion.div>
+              )}
+
               {isSent && (
                 <motion.div
                   initial={{ opacity: 0, y: -10 }}
@@ -278,28 +318,39 @@ const KontakPage = () => {
               )}
 
               <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Nama <span className="text-red-500">*</span></label>
-                  <input
-                    type="text"
-                    value={formData.name}
-                    onChange={e => setFormData({...formData, name: e.target.value})}
-                    required
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-pmi transition"
-                    placeholder="Masukkan nama Anda"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Email <span className="text-red-500">*</span></label>
-                  <input
-                    type="email"
-                    value={formData.email}
-                    onChange={e => setFormData({...formData, email: e.target.value})}
-                    required
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-pmi transition"
-                    placeholder="Masukkan email Anda"
-                  />
-                </div>
+                {!isAnonim && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Nama <span className="text-red-500">*</span></label>
+                      <input
+                        type="text"
+                        value={formData.name}
+                        onChange={e => setFormData({...formData, name: e.target.value})}
+                        required={!isAnonim}
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-pmi transition"
+                        placeholder="Masukkan nama Anda"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Email <span className="text-red-500">*</span></label>
+                      <input
+                        type="email"
+                        value={formData.email}
+                        onChange={e => setFormData({...formData, email: e.target.value})}
+                        required={!isAnonim}
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-pmi transition"
+                        placeholder="Masukkan email Anda"
+                      />
+                    </div>
+                  </>
+                )}
+
+                {isAnonim && (
+                  <div className="p-3 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm text-gray-500 dark:text-gray-400 flex items-center gap-2">
+                    <Eye size={16} /> Pesan akan dikirim secara anonim
+                  </div>
+                )}
+
                 <div>
                   <label className="block text-sm font-medium mb-1">Pesan <span className="text-red-500">*</span></label>
                   <textarea
@@ -328,7 +379,7 @@ const KontakPage = () => {
                     </>
                   ) : (
                     <>
-                      <Send size={18} /> Kirim Pesan
+                      <Send size={18} /> {isAnonim ? 'Kirim Anonim' : 'Kirim Pesan'}
                     </>
                   )}
                 </motion.button>

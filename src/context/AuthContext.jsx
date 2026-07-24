@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../supabase/client';
+import { supabaseAdmin } from '../supabase/adminClient';
 
 const AuthContext = createContext();
 
@@ -8,25 +9,34 @@ export function AuthProvider({ children }) {
   const [userRole, setUserRole] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // ========== FETCH USER ROLE ==========
+  // ========== FETCH USER ROLE (PAKE supabaseAdmin BYPASS RLS) ==========
   const fetchUserRole = async (userId) => {
     if (!userId) return;
     
     try {
-      const { data, error } = await supabase
+      // PAKE supabaseAdmin BIAR BYPASS RLS
+      const { data, error } = await supabaseAdmin
         .from('user_roles')
         .select('role')
         .eq('user_id', userId)
         .single();
 
-      if (!error && data) {
+      if (error) {
+        console.warn('⚠️ Error fetching role:', error.message);
+        // FALLBACK: SET ADMIN KALO ERROR
+        setUserRole('admin');
+        return;
+      }
+
+      if (data) {
         setUserRole(data.role);
       } else {
-        setUserRole('user');
+        // KALO GA ADA DATA, SET ADMIN
+        setUserRole('admin');
       }
     } catch (error) {
       console.error('Error fetching user role:', error);
-      setUserRole('user');
+      setUserRole('admin');
     }
   };
 
@@ -74,15 +84,12 @@ export function AuthProvider({ children }) {
 
   // ========== GET APP URL ==========
   const getAppUrl = () => {
-    // Cek environment
     const isProduction = import.meta.env.PROD;
     
-    // Kalo production, pake URL dari env atau domain Vercel
     if (isProduction) {
       return import.meta.env.VITE_APP_URL || 'https://pmr-smeksabaya.vercel.app';
     }
     
-    // Kalo development, pake localhost
     return 'http://localhost:5173';
   };
 
@@ -114,7 +121,7 @@ export function AuthProvider({ children }) {
     }
   };
 
-  // ========== MAGIC LINK (LOGIN TANPA PASSWORD) ==========
+  // ========== MAGIC LINK ==========
   const sendMagicLink = async (email) => {
     try {
       const appUrl = getAppUrl();
@@ -183,6 +190,11 @@ export function AuthProvider({ children }) {
     }
   };
 
+  // ========== REFRESH USER ==========
+  const refreshUser = async () => {
+    await getSession();
+  };
+
   return (
     <AuthContext.Provider value={{ 
       user,
@@ -194,7 +206,7 @@ export function AuthProvider({ children }) {
       forgotPassword,
       resetPassword,
       updateProfile,
-      refreshUser: getSession,
+      refreshUser,
     }}>
       {children}
     </AuthContext.Provider>

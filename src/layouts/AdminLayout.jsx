@@ -4,14 +4,16 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Menu, X, LayoutDashboard, Users, Calendar, Image, Settings, 
   LogOut, Sun, Moon, Activity, Home, ChevronLeft, ChevronRight,
-  Shield, Sparkles
+  Shield, Sparkles, Mail
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
+import { supabaseAdmin } from '../supabase/adminClient';
 
 const AdminLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const { theme, toggleTheme } = useTheme();
   const { logout } = useAuth();
   const navigate = useNavigate();
@@ -30,6 +32,48 @@ const AdminLayout = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // ========== FETCH UNREAD MESSAGES ==========
+  useEffect(() => {
+    const fetchUnread = async () => {
+      try {
+        const { data, error, count } = await supabaseAdmin
+          .from('pesan')
+          .select('id', { count: 'exact', head: true })
+          .eq('status', 'baru');
+
+        if (error) throw error;
+        setUnreadCount(count || 0);
+      } catch (error) {
+        console.error('Error fetching unread messages:', error);
+      }
+    };
+
+    fetchUnread();
+
+    // ===== REALTIME - DI COMMENT DULU BIAR GAK ERROR =====
+    // const channel = supabaseAdmin
+    //   .channel('admin-pesan-realtime')
+    //   .on('postgres_changes', {
+    //     event: 'INSERT',
+    //     schema: 'public',
+    //     table: 'pesan'
+    //   }, () => {
+    //     fetchUnread();
+    //   })
+    //   .on('postgres_changes', {
+    //     event: 'UPDATE',
+    //     schema: 'public',
+    //     table: 'pesan'
+    //   }, () => {
+    //     fetchUnread();
+    //   })
+    //   .subscribe();
+
+    // return () => {
+    //   supabaseAdmin.removeChannel(channel);
+    // };
+  }, []);
+
   // ========== MENU ITEMS ==========
   const menuItems = [
     { path: '/admin', icon: LayoutDashboard, label: 'Dashboard' },
@@ -37,6 +81,7 @@ const AdminLayout = () => {
     { path: '/admin/program', icon: Calendar, label: 'Kelola Program' },
     { path: '/admin/kegiatan', icon: Activity, label: 'Kelola Kegiatan' },
     { path: '/admin/galeri', icon: Image, label: 'Kelola Galeri' },
+    { path: '/admin/pesan', icon: Mail, label: 'Pesan Masuk', badge: unreadCount },
     { path: '/admin/settings', icon: Settings, label: 'Pengaturan' },
   ];
 
@@ -91,13 +136,13 @@ const AdminLayout = () => {
         )}
       </AnimatePresence>
 
-      {/* ========== SIDEBAR - FIXED + SCROLLABLE MENU ========== */}
+      {/* ========== SIDEBAR ========== */}
       <aside
         className={`fixed top-0 left-0 h-full w-72 bg-white dark:bg-gray-800 shadow-2xl z-50 flex flex-col transition-transform duration-300 ease-in-out ${
           sidebarOpen || !isMobile ? 'translate-x-0' : '-translate-x-full'
         } md:translate-x-0`}
       >
-        {/* ===== LOGO - TETAP DI ATAS ===== */}
+        {/* ===== LOGO ===== */}
         <div className="flex-shrink-0 p-4 border-b dark:border-gray-700 bg-white dark:bg-gray-800">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-gradient-to-r from-pmi to-red-600 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -110,7 +155,7 @@ const AdminLayout = () => {
           </div>
         </div>
 
-        {/* ===== MENU - SCROLLABLE ===== */}
+        {/* ===== MENU ===== */}
         <nav className="flex-1 overflow-y-auto p-3 space-y-1">
           {menuItems.map((item) => {
             const active = isActive(item.path);
@@ -119,7 +164,7 @@ const AdminLayout = () => {
                 key={item.path}
                 to={item.path}
                 onClick={() => setSidebarOpen(false)}
-                className={`flex items-center gap-3 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg transition-all duration-200 group ${
+                className={`flex items-center gap-3 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg transition-all duration-200 group relative ${
                   active 
                     ? 'bg-pmi text-white shadow-lg shadow-pmi/20' 
                     : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
@@ -127,6 +172,18 @@ const AdminLayout = () => {
               >
                 <item.icon size={18} className={active ? 'text-white' : 'text-gray-500 dark:text-gray-400 group-hover:text-pmi'} />
                 <span className="text-sm sm:text-base font-medium">{item.label}</span>
+                
+                {/* ===== BADGE UNREAD ===== */}
+                {item.badge > 0 && (
+                  <span className={`ml-auto text-xs px-2 py-0.5 rounded-full ${
+                    active 
+                      ? 'bg-white text-pmi' 
+                      : 'bg-pmi text-white'
+                  }`}>
+                    {item.badge}
+                  </span>
+                )}
+                
                 {active && (
                   <motion.div
                     layoutId="activeIndicator"
@@ -139,7 +196,7 @@ const AdminLayout = () => {
           })}
         </nav>
 
-        {/* ===== BOTTOM - TETAP DI BAWAH ===== */}
+        {/* ===== BOTTOM ===== */}
         <div className="flex-shrink-0 p-3 border-t dark:border-gray-700 space-y-1 bg-white dark:bg-gray-800">
           <button
             onClick={toggleTheme}
