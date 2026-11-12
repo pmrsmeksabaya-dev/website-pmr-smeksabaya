@@ -1,4 +1,5 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
 import Layout from './layouts/Layout';
@@ -18,6 +19,7 @@ import GaleriPage from './pages/GaleriPage';
 import PendaftaranPage from './pages/PendaftaranPage';
 import KontakPage from './pages/KontakPage';
 import PendaftaranRedirect from './pages/PendaftaranRedirect';
+import MaintenancePage from './pages/MaintenancePage';
 
 // ========== ADMIN PAGES ==========
 import AdminLogin from './pages/admin/AdminLogin';
@@ -31,6 +33,30 @@ import ForgotPassword from './pages/admin/ForgotPassword';
 import ResetPassword from './pages/admin/ResetPassword';
 import AdminPesan from './pages/admin/AdminPesan';
 
+// ========== MAINTENANCE GUARD COMPONENT ==========
+function MaintenanceGuard({ children }) {
+  const [maintenance, setMaintenance] = useState(
+    localStorage.getItem('maintenance_mode') === 'true'
+  );
+  const location = useLocation();
+  const isAdminPath = location.pathname.startsWith('/admin');
+
+  useEffect(() => {
+    const handleStorage = () => {
+      setMaintenance(localStorage.getItem('maintenance_mode') === 'true');
+    };
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, []);
+
+  // ===== KALO MAINTENANCE & BUKAN ADMIN = TAMPILIN MAINTENANCE =====
+  if (maintenance && !isAdminPath) {
+    return <MaintenancePage />;
+  }
+
+  return children;
+}
+
 function App() {
   return (
     <ThemeProvider>
@@ -39,36 +65,41 @@ function App() {
           <Analytics />
           <SpeedInsights />
           <ScrollToTop />
-          <Routes>
-            {/* ===== PUBLIC ROUTES ===== */}
-            <Route path="/" element={<Layout />}>
-              <Route index element={<HomePage />} />
-              <Route path="profil" element={<ProfilePage />} />
-              <Route path="struktur-organisasi" element={<StrukturPage />} />
-              <Route path="program-kerja" element={<ProgramPage />} />
-              <Route path="kegiatan" element={<KegiatanPage />} />
-              <Route path="galeri" element={<GaleriPage />} />
-              <Route path="pendaftaran" element={<PendaftaranPage />} />
-              <Route path="kontak" element={<KontakPage />} />
-              <Route path="pendaftaran-redirect" element={<PendaftaranRedirect />} />
-            </Route>
+          <MaintenanceGuard>
+            <Routes>
+              {/* ===== PUBLIC ROUTES ===== */}
+              <Route path="/" element={<Layout />}>
+                <Route index element={<HomePage />} />
+                <Route path="profil" element={<ProfilePage />} />
+                <Route path="struktur-organisasi" element={<StrukturPage />} />
+                <Route path="program-kerja" element={<ProgramPage />} />
+                <Route path="kegiatan" element={<KegiatanPage />} />
+                <Route path="galeri" element={<GaleriPage />} />
+                <Route path="pendaftaran" element={<PendaftaranPage />} />
+                <Route path="kontak" element={<KontakPage />} />
+                <Route path="pendaftaran-redirect" element={<PendaftaranRedirect />} />
+              </Route>
 
-            {/* ===== ADMIN AUTH ROUTES ===== */}
-            <Route path="/admin/login" element={<AdminLogin />} />
-            <Route path="/admin/forgot-password" element={<ForgotPassword />} />
-            <Route path="/admin/reset-password" element={<ResetPassword />} />
+              {/* ===== MAINTENANCE PAGE (BISA DIAKSES LANGSUNG) ===== */}
+              <Route path="/maintenance" element={<MaintenancePage />} />
 
-            {/* ===== ADMIN PROTECTED ROUTES ===== */}
-            <Route path="/admin" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
-              <Route index element={<AdminDashboard />} />
-              <Route path="struktur" element={<AdminStruktur />} />
-              <Route path="program" element={<AdminProgram />} />
-              <Route path="kegiatan" element={<AdminKegiatan />} />
-              <Route path="galeri" element={<AdminGaleri />} />
-              <Route path="/admin/pesan" element={<AdminPesan />} />
-              <Route path="settings" element={<AdminSettings />} />
-            </Route>
-          </Routes>
+              {/* ===== ADMIN AUTH ROUTES ===== */}
+              <Route path="/admin/login" element={<AdminLogin />} />
+              <Route path="/admin/forgot-password" element={<ForgotPassword />} />
+              <Route path="/admin/reset-password" element={<ResetPassword />} />
+
+              {/* ===== ADMIN PROTECTED ROUTES ===== */}
+              <Route path="/admin" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
+                <Route index element={<AdminDashboard />} />
+                <Route path="struktur" element={<AdminStruktur />} />
+                <Route path="program" element={<AdminProgram />} />
+                <Route path="kegiatan" element={<AdminKegiatan />} />
+                <Route path="galeri" element={<AdminGaleri />} />
+                <Route path="pesan" element={<AdminPesan />} />
+                <Route path="settings" element={<AdminSettings />} />
+              </Route>
+            </Routes>
+          </MaintenanceGuard>
         </Router>
       </AuthProvider>
     </ThemeProvider>

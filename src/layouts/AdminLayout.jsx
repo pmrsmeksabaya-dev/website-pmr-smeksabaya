@@ -33,46 +33,72 @@ const AdminLayout = () => {
   }, []);
 
   // ========== FETCH UNREAD MESSAGES ==========
-  useEffect(() => {
-    const fetchUnread = async () => {
-      try {
-        const { data, error, count } = await supabaseAdmin
-          .from('pesan')
-          .select('id', { count: 'exact', head: true })
-          .eq('status', 'baru');
+useEffect(() => {
+  const fetchUnread = async () => {
+    try {
+      const { data, error, count } = await supabaseAdmin
+        .from('pesan')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'baru');
 
-        if (error) throw error;
-        setUnreadCount(count || 0);
-      } catch (error) {
-        console.error('Error fetching unread messages:', error);
+      if (error) throw error;
+      setUnreadCount(count || 0);
+    } catch (error) {
+      console.error('Error fetching unread messages:', error);
+    }
+  };
+
+  fetchUnread();
+
+  // ===== CHANNEL 1: INSERT (pesan baru) =====
+  const channelInsert = supabaseAdmin
+    .channel('admin-pesan-insert-layout')
+    .on('postgres_changes', 
+      { event: 'INSERT', schema: 'public', table: 'pesan' }, 
+      (payload) => {
+        console.log('📩 Pesan baru (layout):', payload);
+        fetchUnread();
       }
-    };
+    )
+    .subscribe((status) => {
+      console.log('📡 INSERT status:', status);
+    });
 
-    fetchUnread();
+  // ===== CHANNEL 2: UPDATE (status berubah) =====
+  const channelUpdate = supabaseAdmin
+    .channel('admin-pesan-update-layout')
+    .on('postgres_changes', 
+      { event: 'UPDATE', schema: 'public', table: 'pesan' }, 
+      (payload) => {
+        console.log('✏️ Pesan diupdate (layout):', payload);
+        fetchUnread();
+      }
+    )
+    .subscribe((status) => {
+      console.log('📡 UPDATE status:', status);
+    });
 
-    // ===== REALTIME - DI COMMENT DULU BIAR GAK ERROR =====
-    // const channel = supabaseAdmin
-    //   .channel('admin-pesan-realtime')
-    //   .on('postgres_changes', {
-    //     event: 'INSERT',
-    //     schema: 'public',
-    //     table: 'pesan'
-    //   }, () => {
-    //     fetchUnread();
-    //   })
-    //   .on('postgres_changes', {
-    //     event: 'UPDATE',
-    //     schema: 'public',
-    //     table: 'pesan'
-    //   }, () => {
-    //     fetchUnread();
-    //   })
-    //   .subscribe();
+  // ===== CHANNEL 3: DELETE =====
+  const channelDelete = supabaseAdmin
+    .channel('admin-pesan-delete-layout')
+    .on('postgres_changes', 
+      { event: 'DELETE', schema: 'public', table: 'pesan' }, 
+      (payload) => {
+        console.log('🗑️ Pesan dihapus (layout):', payload);
+        fetchUnread();
+      }
+    )
+    .subscribe((status) => {
+      console.log('📡 DELETE status:', status);
+    });
 
-    // return () => {
-    //   supabaseAdmin.removeChannel(channel);
-    // };
-  }, []);
+  // ===== CLEANUP =====
+  return () => {
+    supabaseAdmin.removeChannel(channelInsert);
+    supabaseAdmin.removeChannel(channelUpdate);
+    supabaseAdmin.removeChannel(channelDelete);
+  };
+}, []);
 
   // ========== MENU ITEMS ==========
   const menuItems = [

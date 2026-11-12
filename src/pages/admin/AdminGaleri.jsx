@@ -35,6 +35,26 @@ const AdminGaleri = () => {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
 
+  // ========== FORMAT GAMBAR & VIDEO YANG DIDUKUNG ==========
+  const SUPPORTED_IMAGE_FORMATS = [
+    'image/jpeg', 'image/jpg', 'image/pjpeg',  // JPG / JPEG
+    'image/png', 'image/x-png',                 // PNG
+    'image/gif',                                 // GIF
+    'image/bmp', 'image/x-ms-bmp',              // BMP
+    'image/webp',                                // WEBP
+    'image/svg+xml',                             // SVG
+    'image/x-icon', 'image/vnd.microsoft.icon', // ICO
+  ];
+
+  const SUPPORTED_VIDEO_FORMATS = [
+    'video/mp4',           // MP4
+    'video/webm',          // WEBM
+    'video/quicktime',     // MOV
+    'video/x-msvideo',     // AVI
+    'video/x-matroska',    // MKV
+    'video/ogg',           // OGG
+  ];
+
   // ========== GRID COLUMN MAPPING ==========
   const getGridColsClass = () => {
     if (gridCols === 2) return 'grid-cols-1 sm:grid-cols-2';
@@ -137,49 +157,106 @@ const AdminGaleri = () => {
     return 0;
   });
 
-  // ========== RESIZE IMAGE ==========
+  // ========== RESIZE IMAGE (SUPPORT SEMUA FORMAT) ==========
   const resizeImage = (file) => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = (e) => {
         const img = new window.Image();
+        
         img.onload = () => {
-          const canvas = document.createElement('canvas');
-          canvas.width = IG_WIDTH;
-          canvas.height = IG_HEIGHT;
-          
-          const ctx = canvas.getContext('2d');
-          ctx.fillStyle = '#FFFFFF';
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-          
-          const ratio = Math.min(IG_WIDTH / img.width, IG_HEIGHT / img.height);
-          const newWidth = img.width * ratio;
-          const newHeight = img.height * ratio;
-          const x = (IG_WIDTH - newWidth) / 2;
-          const y = (IG_HEIGHT - newHeight) / 2;
-          
-          ctx.drawImage(img, x, y, newWidth, newHeight);
-          
-          canvas.toBlob((blob) => {
-            const resizedFile = new File([blob], file.name, { type: 'image/jpeg' });
-            resolve(resizedFile);
-          }, 'image/jpeg', 0.92);
+          try {
+            const canvas = document.createElement('canvas');
+            canvas.width = IG_WIDTH;
+            canvas.height = IG_HEIGHT;
+            
+            const ctx = canvas.getContext('2d');
+            
+            // ===== BACKGROUND PUTIH (buat PNG transparan & format lain) =====
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // ===== HITUNG RASIO =====
+            const ratio = Math.min(IG_WIDTH / img.width, IG_HEIGHT / img.height);
+            const newWidth = img.width * ratio;
+            const newHeight = img.height * ratio;
+            const x = (IG_WIDTH - newWidth) / 2;
+            const y = (IG_HEIGHT - newHeight) / 2;
+            
+            // ===== GAMBAR ULANG =====
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            ctx.drawImage(img, x, y, newWidth, newHeight);
+            
+            // ===== CONVERT KE JPEG =====
+            canvas.toBlob((blob) => {
+              if (!blob) {
+                reject(new Error('Canvas toBlob gagal'));
+                return;
+              }
+              
+              // ===== GANTI NAMA FILE JADI .jpg =====
+              const baseName = file.name.replace(/\.[^/.]+$/, '');
+              const newFileName = `${baseName}.jpg`;
+              
+              const resizedFile = new File([blob], newFileName, { 
+                type: 'image/jpeg',
+                lastModified: Date.now(),
+              });
+              
+              console.log('✅ Resized:', {
+                original: file.name,
+                originalType: file.type,
+                originalSize: (file.size / 1024).toFixed(2) + ' KB',
+                resized: newFileName,
+                resizedSize: (blob.size / 1024).toFixed(2) + ' KB',
+                resizedType: 'image/jpeg',
+              });
+              
+              resolve(resizedFile);
+            }, 'image/jpeg', 0.92);
+          } catch (err) {
+            reject(err);
+          }
         };
-        img.onerror = reject;
+        
+        img.onerror = () => {
+          reject(new Error(`Gagal load gambar: ${file.name}`));
+        };
+        
         img.src = e.target.result;
       };
-      reader.onerror = reject;
+      
+      reader.onerror = () => {
+        reject(new Error(`Gagal baca file: ${file.name}`));
+      };
+      
       reader.readAsDataURL(file);
     });
   };
 
-  // ========== FILE HANDLING ==========
+  // ========== FILE HANDLING (SUPPORT FORMAT UMUM) ==========
   const handleFiles = async (files) => {
-    const validFiles = files.filter(f => f.type.startsWith('image/') || f.type.startsWith('video/'));
-    
+    // ===== FILTER FILE YANG VALID =====
+    const validFiles = files.filter(f => {
+      const isValid = SUPPORTED_IMAGE_FORMATS.includes(f.type) || SUPPORTED_VIDEO_FORMATS.includes(f.type);
+      if (!isValid) {
+        console.warn(`❌ Format tidak didukung: ${f.name} (${f.type})`);
+      }
+      return isValid;
+    });
+
     if (validFiles.length === 0) {
-      alert('Hanya file gambar dan video yang diperbolehkan!');
+      alert(`Hanya file gambar dan video yang diperbolehkan!\n\n📷 Format Gambar:\nJPG, JPEG, PNG, GIF, BMP, WEBP, SVG, ICO\n\n🎬 Format Video:\nMP4, WEBM, MOV, AVI, MKV, OGG`);
       return;
+    }
+
+    // ===== KASIH WARNING KALO ADA FILE YANG DI-SKIP =====
+    const skippedCount = files.length - validFiles.length;
+    if (skippedCount > 0) {
+      const skippedFiles = files.filter(f => !SUPPORTED_IMAGE_FORMATS.includes(f.type) && !SUPPORTED_VIDEO_FORMATS.includes(f.type));
+      const skippedNames = skippedFiles.map(f => `• ${f.name}`).join('\n');
+      alert(`⚠️ ${skippedCount} file dilewati (format tidak didukung):\n\n${skippedNames}\n\nSilakan convert ke JPG/PNG terlebih dahulu.`);
     }
 
     if (selectedFiles.length + validFiles.length > MAX_FILES) {
@@ -193,17 +270,18 @@ const AdminGaleri = () => {
     for (const file of validFiles) {
       if (file.type.startsWith('image/')) {
         try {
+          // ===== RESIZE & CONVERT KE JPG =====
           const resized = await resizeImage(file);
           processedFiles.push(resized);
           const previewUrl = URL.createObjectURL(resized);
           processedPreviews.push({ url: previewUrl, name: file.name });
         } catch (error) {
-          console.error('Error resizing:', error);
-          processedFiles.push(file);
-          const previewUrl = URL.createObjectURL(file);
-          processedPreviews.push({ url: previewUrl, name: file.name });
+          console.error('❌ Error resize:', file.name, error);
+          alert(`Gagal proses file "${file.name}". Mungkin format tidak didukung browser.`);
+          // SKIP file yang gagal
         }
       } else {
+        // VIDEO
         processedFiles.push(file);
         const previewUrl = URL.createObjectURL(file);
         processedPreviews.push({ url: previewUrl, name: file.name, isVideo: true });
@@ -373,19 +451,32 @@ const AdminGaleri = () => {
       const isVideo = file.type.startsWith('video/');
       
       try {
-        const fileExt = file.name.split('.').pop();
+        const fileExt = file.name.split('.').pop() || 'jpg';
         const fileName = `${Date.now()}_${i}.${fileExt}`;
         const filePath = `galeri/${fileName}`;
 
+        // ===== UPLOAD DENGAN contentType YANG BENER =====
         const { error: uploadError } = await supabase.storage
           .from('galeri')
-          .upload(filePath, file);
+          .upload(filePath, file, {
+            cacheControl: '3600',
+            contentType: file.type || 'image/jpeg',
+            upsert: false,
+          });
 
         if (uploadError) throw uploadError;
 
         const { data: { publicUrl } } = supabase.storage
           .from('galeri')
           .getPublicUrl(filePath);
+
+        // ===== DEBUG LOG =====
+        console.log('📸 Uploaded:', {
+          name: file.name,
+          type: file.type,
+          size: (file.size / 1024).toFixed(2) + ' KB',
+          url: publicUrl,
+        });
 
         const { error: dbError } = await supabase
           .from('galeri')
@@ -958,7 +1049,7 @@ const AdminGaleri = () => {
                 key={item.id}
                 className="group relative bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-md hover:shadow-xl transition aspect-square"
               >
-                {/* ===== CHECKBOX - LEBIH KELIATAN ===== */}
+                {/* ===== CHECKBOX ===== */}
                 <input
                   type="checkbox"
                   checked={selectedPhotos.includes(item.id)}
@@ -1198,7 +1289,7 @@ const UploadModal = ({
           >
             <input
               type="file"
-              accept="image/*,video/*"
+              accept="image/jpeg,image/jpg,image/png,image/gif,image/bmp,image/webp,image/svg+xml,image/x-icon,video/mp4,video/webm,video/quicktime,video/x-msvideo,video/x-matroska,video/ogg"
               onChange={(e) => {
                 const files = Array.from(e.target.files);
                 handleFiles(files);
@@ -1212,7 +1303,9 @@ const UploadModal = ({
               <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
                 Drag & drop file di sini, atau <span className="text-pmi font-semibold">klik untuk pilih</span>
               </p>
-              <p className="text-[10px] sm:text-xs text-gray-400 mt-1">Support: JPG, PNG, GIF, MP4 • Max {MAX_FILES} file</p>
+              <p className="text-[10px] sm:text-xs text-gray-400 mt-1">
+                📷 JPG, PNG, GIF, BMP, WEBP, SVG, ICO • 🎬 MP4, WEBM, MOV, AVI, MKV • Max {MAX_FILES} file
+              </p>
             </label>
           </div>
 

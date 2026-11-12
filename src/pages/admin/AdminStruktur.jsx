@@ -126,21 +126,36 @@ const AdminStruktur = () => {
   }, [showToast]);
 
   // ========== REALTIME ==========
-  useEffect(() => {
-    fetchMembers();
+useEffect(() => {
+  fetchMembers();
 
-    const channel = supabaseAdmin
-      .channel('admin-struktur-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'pengurus_resmi' }, () => {
-        fetchMembers();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'pengurus_sementara' }, () => {
-        fetchMembers();
-      })
-      .subscribe();
+  // ===== CHANNEL 1: pengurus_resmi =====
+  const channel1 = supabaseAdmin
+    .channel('admin-struktur-resmi')
+    .on('postgres_changes', 
+      { event: '*', schema: 'public', table: 'pengurus_resmi' }, 
+      () => fetchMembers()
+    )
+    .subscribe((status) => {
+      console.log('📡 Realtime resmi:', status);
+    });
 
-    return () => supabaseAdmin.removeChannel(channel);
-  }, [fetchMembers]);
+  // ===== CHANNEL 2: pengurus_sementara =====
+  const channel2 = supabaseAdmin
+    .channel('admin-struktur-sementara')
+    .on('postgres_changes', 
+      { event: '*', schema: 'public', table: 'pengurus_sementara' }, 
+      () => fetchMembers()
+    )
+    .subscribe((status) => {
+      console.log('📡 Realtime sementara:', status);
+    });
+
+  return () => {
+    supabaseAdmin.removeChannel(channel1);
+    supabaseAdmin.removeChannel(channel2);
+  };
+}, [fetchMembers]);
 
   // ========== CROP COMPLETE ==========
   const onCropComplete = useCallback((croppedArea, croppedAreaPixels) => {
@@ -207,42 +222,50 @@ const AdminStruktur = () => {
   }, [showToast]);
 
   // ========== FILE UPLOAD ==========
-  const handleFileUpload = useCallback(async (file) => {
-    if (!file) return null;
+const handleFileUpload = useCallback(async (file) => {
+  if (!file) return null;
 
-    setUploading(true);
-    try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}.${fileExt}`;
-      const filePath = `pengurus/${fileName}`;
+  setUploading(true);
+  try {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Date.now()}.${fileExt}`;
+    const filePath = `pengurus/${fileName}`;
 
-      const { error: uploadError } = await supabaseAdmin.storage
-        .from('pengurus')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          contentType: file.type || 'image/png',
-          upsert: true,
-        });
+    // ===== FIX: contentType PASTI image/jpeg =====
+    const { error: uploadError } = await supabaseAdmin.storage
+      .from('pengurus')
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        contentType: 'image/jpeg',  // <-- FIX DI SINI
+        upsert: true,
+      });
 
-      if (uploadError) {
-        console.error('Upload error:', uploadError);
-        showToast('Gagal upload foto: ' + uploadError.message, 'error');
-        return null;
-      }
-
-      const { data: { publicUrl } } = supabaseAdmin.storage
-        .from('pengurus')
-        .getPublicUrl(filePath);
-
-      return publicUrl;
-    } catch (error) {
-      console.error('Error uploading photo:', error);
-      showToast('Gagal upload foto: ' + error.message, 'error');
+    if (uploadError) {
+      console.error('Upload error:', uploadError);
+      showToast('Gagal upload foto: ' + uploadError.message, 'error');
       return null;
-    } finally {
-      setUploading(false);
     }
-  }, [showToast]);
+
+    const { data: { publicUrl } } = supabaseAdmin.storage
+      .from('pengurus')
+      .getPublicUrl(filePath);
+
+    // ===== DEBUG LOG =====
+    console.log('📸 Foto uploaded:', {
+      name: file.name,
+      type: file.type,
+      url: publicUrl,
+    });
+
+    return publicUrl;
+  } catch (error) {
+    console.error('Error uploading photo:', error);
+    showToast('Gagal upload foto: ' + error.message, 'error');
+    return null;
+  } finally {
+    setUploading(false);
+  }
+}, [showToast]);
 
   // ========== CHECK DUPLICATE ==========
   const checkDuplicate = useCallback(async (nama, excludeId = null) => {

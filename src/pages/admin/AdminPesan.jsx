@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Mail, Eye, CheckCircle, X, Clock, Trash2, 
@@ -13,25 +13,14 @@ const AdminPesan = () => {
   const [selectedMessage, setSelectedMessage] = useState(null);
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
 
-  useEffect(() => {
-    fetchMessages();
-
-    // ===== REALTIME - ON DULU, BARU SUBSCRIBE =====
-    const channel = supabaseAdmin
-      .channel('admin-pesan-realtime')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'pesan'
-      }, () => {
-        fetchMessages();
-      })
-      .subscribe();
-
-    return () => supabaseAdmin.removeChannel(channel);
+  // ========== TOAST (PINDAH KE ATAS) ==========
+  const showToast = useCallback((message, type = 'success') => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
   }, []);
 
-  const fetchMessages = async () => {
+  // ========== FETCH MESSAGES ==========
+  const fetchMessages = useCallback(async () => {
     setLoading(true);
     try {
       const { data, error } = await supabaseAdmin
@@ -47,13 +36,66 @@ const AdminPesan = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [showToast]);
 
-  const showToast = (message, type = 'success') => {
-    setToast({ show: true, message, type });
-    setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
-  };
+  // ========== REALTIME ==========
+  useEffect(() => {
+    fetchMessages();
 
+    // ===== CHANNEL 1: INSERT (pesan baru) =====
+    const channelInsert = supabaseAdmin
+      .channel('admin-pesan-insert')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'pesan'
+      }, (payload) => {
+        console.log('📩 Pesan baru masuk:', payload);
+        fetchMessages();
+      })
+      .subscribe((status) => {
+        console.log('📡 Realtime INSERT status:', status);
+      });
+
+    // ===== CHANNEL 2: UPDATE (status berubah) =====
+    const channelUpdate = supabaseAdmin
+      .channel('admin-pesan-update')
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'pesan'
+      }, (payload) => {
+        console.log('✏️ Pesan diupdate:', payload);
+        fetchMessages();
+      })
+      .subscribe((status) => {
+        console.log('📡 Realtime UPDATE status:', status);
+      });
+
+    // ===== CHANNEL 3: DELETE =====
+    const channelDelete = supabaseAdmin
+      .channel('admin-pesan-delete')
+      .on('postgres_changes', {
+        event: 'DELETE',
+        schema: 'public',
+        table: 'pesan'
+      }, (payload) => {
+        console.log('🗑️ Pesan dihapus:', payload);
+        fetchMessages();
+      })
+      .subscribe((status) => {
+        console.log('📡 Realtime DELETE status:', status);
+      });
+
+    // ===== CLEANUP =====
+    return () => {
+      supabaseAdmin.removeChannel(channelInsert);
+      supabaseAdmin.removeChannel(channelUpdate);
+      supabaseAdmin.removeChannel(channelDelete);
+    };
+  }, [fetchMessages]);
+
+  // ========== STATUS CHANGE ==========
   const handleStatusChange = async (id, status) => {
     try {
       const { error } = await supabaseAdmin
@@ -70,6 +112,7 @@ const AdminPesan = () => {
     }
   };
 
+  // ========== DELETE ==========
   const handleDelete = async (id) => {
     if (!window.confirm('Yakin ingin menghapus pesan ini?')) return;
 
@@ -89,6 +132,7 @@ const AdminPesan = () => {
     }
   };
 
+  // ========== STATUS BADGE ==========
   const getStatusBadge = (status) => {
     const statusMap = {
       'baru': { color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400', label: '📩 Baru' },
@@ -98,6 +142,7 @@ const AdminPesan = () => {
     return statusMap[status] || statusMap['baru'];
   };
 
+  // ========== FILTER ==========
   const filteredMessages = messages.filter(m =>
     m.nama?.toLowerCase().includes(search.toLowerCase()) ||
     m.pesan?.toLowerCase().includes(search.toLowerCase()) ||
@@ -107,6 +152,7 @@ const AdminPesan = () => {
   const unreadCount = messages.filter(m => m.status === 'baru').length;
   const anonimCount = messages.filter(m => m.is_anonim).length;
 
+  // ========== LOADING ==========
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
