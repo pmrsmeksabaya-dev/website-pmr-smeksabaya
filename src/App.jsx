@@ -33,23 +33,61 @@ import ForgotPassword from './pages/admin/ForgotPassword';
 import ResetPassword from './pages/admin/ResetPassword';
 import AdminPesan from './pages/admin/AdminPesan';
 
+// ========== IMPORT SUPABASE ==========
+import { supabase } from './supabase/client';
+
 // ========== MAINTENANCE GUARD COMPONENT ==========
 function MaintenanceGuard({ children }) {
-  const [maintenance, setMaintenance] = useState(
-    localStorage.getItem('maintenance_mode') === 'true'
-  );
+  const [maintenance, setMaintenance] = useState(false);
+  const [loading, setLoading] = useState(true);
   const location = useLocation();
   const isAdminPath = location.pathname.startsWith('/admin');
 
   useEffect(() => {
-    const handleStorage = () => {
-      setMaintenance(localStorage.getItem('maintenance_mode') === 'true');
+    const checkMaintenance = async () => {
+      try {
+        const { data } = await supabase
+          .from('pengaturan_global')
+          .select('key, value')
+          .in('key', ['maintenance_mode']);
+        
+        const mode = data?.find(d => d.key === 'maintenance_mode');
+        setMaintenance(mode?.value === 'true');
+      } catch (error) {
+        console.error('Error checking maintenance:', error);
+      } finally {
+        setLoading(false);
+      }
     };
-    window.addEventListener('storage', handleStorage);
-    return () => window.removeEventListener('storage', handleStorage);
+
+    checkMaintenance();
+
+    // ===== REALTIME: Auto-update kalo admin ubah status =====
+    const channel = supabase
+      .channel('global-settings')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'pengaturan_global' }, 
+        (payload) => {
+          if (payload.new?.key === 'maintenance_mode') {
+            setMaintenance(payload.new.value === 'true');
+          }
+        }
+      )
+      .subscribe();
+
+    return () => supabase.removeChannel(channel);
   }, []);
 
-  // ===== KALO MAINTENANCE & BUKAN ADMIN = TAMPILIN MAINTENANCE =====
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="w-8 h-8 border-4 border-pmi border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  // Kalo maintenance & bukan admin = tampilin halaman maintenance
   if (maintenance && !isAdminPath) {
     return <MaintenancePage />;
   }
@@ -80,7 +118,7 @@ function App() {
                 <Route path="pendaftaran-redirect" element={<PendaftaranRedirect />} />
               </Route>
 
-              {/* ===== MAINTENANCE PAGE (BISA DIAKSES LANGSUNG) ===== */}
+              {/* ===== MAINTENANCE PAGE ===== */}
               <Route path="/maintenance" element={<MaintenancePage />} />
 
               {/* ===== ADMIN AUTH ROUTES ===== */}

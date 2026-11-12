@@ -4,6 +4,7 @@ import {
   Wrench, Clock, Heart, Sparkles, 
   RefreshCw, Mail, AlertTriangle
 } from 'lucide-react';
+import { supabase } from '../supabase/client'; // <-- TAMBAHIN IMPORT INI
 
 const MaintenancePage = () => {
   const [timeLeft, setTimeLeft] = useState({
@@ -13,51 +14,71 @@ const MaintenancePage = () => {
     'Mohon maaf atas ketidaknyamanannya. Tim kami sedang melakukan perbaikan untuk meningkatkan kualitas website PMR Wira SMKN 1 Pringgabaya.'
   );
   const [isMaintenanceDone, setIsMaintenanceDone] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  // ===== AMBIL DATA DARI LOCALSTORAGE =====
+  // ===== AMBIL DATA DARI SUPABASE =====
   useEffect(() => {
-    // Ambil pesan custom dari admin
-    const customMessage = localStorage.getItem('maintenance_message');
-    if (customMessage) {
-      setMessage(customMessage);
-    }
+    const fetchMaintenanceData = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('pengaturan_global')
+          .select('key, value')
+          .in('key', ['maintenance_end_time', 'maintenance_message']);
 
-    // Ambil waktu selesai dari admin
-    const endTimeStr = localStorage.getItem('maintenance_end_time');
-    
-    if (!endTimeStr) {
-      // Default: 24 jam dari sekarang
-      const defaultEnd = new Date();
-      defaultEnd.setDate(defaultEnd.getDate() + 1);
-      localStorage.setItem('maintenance_end_time', defaultEnd.toISOString().slice(0, 16));
-    }
+        if (error) throw error;
 
-    // Parse waktu
-    const targetDate = endTimeStr 
-      ? new Date(endTimeStr).getTime() 
-      : new Date().getTime() + (24 * 60 * 60 * 1000);
+        const endTimeData = data?.find(d => d.key === 'maintenance_end_time');
+        const messageData = data?.find(d => d.key === 'maintenance_message');
 
-    const interval = setInterval(() => {
-      const now = new Date().getTime();
-      const distance = targetDate - now;
+        // Set pesan dari database
+        if (messageData?.value) {
+          setMessage(messageData.value);
+        }
 
-      if (distance < 0) {
-        clearInterval(interval);
-        setIsMaintenanceDone(true);
-        setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-        return;
+        // Parse waktu dari database
+        const targetDate = endTimeData?.value 
+          ? new Date(endTimeData.value).getTime() 
+          : new Date().getTime() + (24 * 60 * 60 * 1000); // Default 24 jam
+
+        // Countdown
+        const interval = setInterval(() => {
+          const now = new Date().getTime();
+          const distance = targetDate - now;
+
+          if (distance < 0) {
+            clearInterval(interval);
+            setIsMaintenanceDone(true);
+            setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+            return;
+          }
+
+          setTimeLeft({
+            days: Math.floor(distance / (1000 * 60 * 60 * 24)),
+            hours: Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+            minutes: Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)),
+            seconds: Math.floor((distance % (1000 * 60)) / 1000),
+          });
+        }, 1000);
+
+        setLoading(false);
+        return () => clearInterval(interval);
+      } catch (error) {
+        console.error('Error fetching maintenance data:', error);
+        setLoading(false);
       }
+    };
 
-      setTimeLeft({
-        days: Math.floor(distance / (1000 * 60 * 60 * 24)),
-        hours: Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
-        minutes: Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)),
-        seconds: Math.floor((distance % (1000 * 60)) / 1000),
-      });
-    }, 1000);
-
-    return () => clearInterval(interval);
+    fetchMaintenanceData();
   }, []);
+
+  // ===== LOADING STATE =====
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="w-10 h-10 border-4 border-pmi border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-red-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4 relative overflow-hidden">

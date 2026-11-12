@@ -15,16 +15,11 @@ const AdminSettings = () => {
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
   const [previewHero, setPreviewHero] = useState(false);
   
-  // ===== MAINTENANCE MODE STATE =====
-  const [maintenanceMode, setMaintenanceMode] = useState(
-    localStorage.getItem('maintenance_mode') === 'true'
-  );
-  const [maintenanceEndTime, setMaintenanceEndTime] = useState(
-    localStorage.getItem('maintenance_end_time') || ''
-  );
-  const [maintenanceMessage, setMaintenanceMessage] = useState(
-    localStorage.getItem('maintenance_message') || 'Website sedang diperbaiki. Akan kembali normal secepatnya.'
-  );
+  // ===== MAINTENANCE MODE STATE (GLOBAL) =====
+  const [maintenanceMode, setMaintenanceMode] = useState(false);
+  const [maintenanceEndTime, setMaintenanceEndTime] = useState('');
+  const [maintenanceMessage, setMaintenanceMessage] = useState('Website sedang diperbaiki. Akan kembali normal secepatnya.');
+  const [maintenanceLoading, setMaintenanceLoading] = useState(true);
 
   // ========== DEFAULT SETTINGS ==========
   const defaultSettings = {
@@ -49,9 +44,10 @@ const AdminSettings = () => {
     stat_prestasi: '1',
   };
 
-  // ========== FETCH SETTINGS ==========
+  // ========== FETCH SETTINGS & MAINTENANCE DATA ==========
   useEffect(() => {
     fetchSettings();
+    fetchMaintenance();
   }, []);
 
   const fetchSettings = async () => {
@@ -80,13 +76,37 @@ const AdminSettings = () => {
     }
   };
 
+  const fetchMaintenance = async () => {
+    setMaintenanceLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('pengaturan_global')
+        .select('key, value')
+        .in('key', ['maintenance_mode', 'maintenance_end_time', 'maintenance_message']);
+
+      if (error) throw error;
+
+      const mode = data?.find(d => d.key === 'maintenance_mode');
+      const endTime = data?.find(d => d.key === 'maintenance_end_time');
+      const message = data?.find(d => d.key === 'maintenance_message');
+
+      setMaintenanceMode(mode?.value === 'true');
+      setMaintenanceEndTime(endTime?.value || '');
+      setMaintenanceMessage(message?.value || 'Website sedang diperbaiki. Akan kembali normal secepatnya.');
+    } catch (error) {
+      console.error('Error fetching maintenance:', error);
+    } finally {
+      setMaintenanceLoading(false);
+    }
+  };
+
   // ========== TOAST ==========
   const showToast = (message, type = 'success') => {
     setToast({ show: true, message, type });
     setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
   };
 
-  // ========== SAVE SETTINGS ==========
+  // ========== SAVE WEBSITE SETTINGS ==========
   const handleSave = async () => {
     setSaving(true);
     try {
@@ -103,7 +123,7 @@ const AdminSettings = () => {
         if (error) throw error;
       }
 
-      showToast('Pengaturan berhasil disimpan!', 'success');
+      showToast('Pengaturan website berhasil disimpan!', 'success');
     } catch (error) {
       console.error('Error saving settings:', error);
       showToast('Gagal menyimpan pengaturan', 'error');
@@ -125,42 +145,65 @@ const AdminSettings = () => {
     }
   };
 
-  // ========== TOGGLE MAINTENANCE MODE ==========
-  const handleToggleMaintenance = () => {
+  // ========== TOGGLE MAINTENANCE MODE (GLOBAL DATABASE) ==========
+  const handleToggleMaintenance = async () => {
     const newValue = !maintenanceMode;
     setMaintenanceMode(newValue);
-    localStorage.setItem('maintenance_mode', newValue.toString());
-    
-    if (newValue) {
-      // Default: 24 jam dari sekarang
-      const defaultEnd = new Date();
-      defaultEnd.setHours(defaultEnd.getHours() + 24);
-      const endTimeStr = defaultEnd.toISOString().slice(0, 16);
-      setMaintenanceEndTime(endTimeStr);
-      localStorage.setItem('maintenance_end_time', endTimeStr);
-      localStorage.setItem('maintenance_message', maintenanceMessage);
+
+    try {
+      // Default end time: 24 jam dari sekarang (jika belum di-set)
+      let endTimeStr = maintenanceEndTime;
+      if (newValue && !endTimeStr) {
+        const defaultEnd = new Date();
+        defaultEnd.setHours(defaultEnd.getHours() + 24);
+        endTimeStr = defaultEnd.toISOString().slice(0, 16);
+        setMaintenanceEndTime(endTimeStr);
+      }
+
+      // ===== SIMPEN KE DATABASE =====
+      const { error } = await supabase
+        .from('pengaturan_global')
+        .upsert([
+          { key: 'maintenance_mode', value: newValue.toString() },
+          { key: 'maintenance_end_time', value: endTimeStr },
+          { key: 'maintenance_message', value: maintenanceMessage },
+        ], { onConflict: 'key' });
+
+      if (error) throw error;
+
+      showToast(
+        newValue 
+          ? '🚧 Website masuk mode MAINTENANCE (GLOBAL)!' 
+          : '✅ Website kembali NORMAL (GLOBAL)!',
+        'success'
+      );
+    } catch (error) {
+      console.error('Error toggling maintenance:', error);
+      setMaintenanceMode(!newValue); // Rollback
+      showToast('Gagal update status maintenance', 'error');
     }
-    
-    window.dispatchEvent(new Event('storage'));
-    
-    showToast(
-      newValue 
-        ? '🚧 Website masuk mode MAINTENANCE!' 
-        : '✅ Website kembali NORMAL!',
-      'success'
-    );
   };
 
-  // ========== SAVE MAINTENANCE SETTINGS ==========
-  const handleSaveMaintenance = () => {
-    localStorage.setItem('maintenance_mode', maintenanceMode.toString());
-    localStorage.setItem('maintenance_end_time', maintenanceEndTime);
-    localStorage.setItem('maintenance_message', maintenanceMessage);
-    window.dispatchEvent(new Event('storage'));
-    showToast('Pengaturan maintenance disimpan!', 'success');
+  // ========== SAVE MAINTENANCE SETTINGS (GLOBAL DATABASE) ==========
+  const handleSaveMaintenance = async () => {
+    try {
+      const { error } = await supabase
+        .from('pengaturan_global')
+        .upsert([
+          { key: 'maintenance_mode', value: maintenanceMode.toString() },
+          { key: 'maintenance_end_time', value: maintenanceEndTime },
+          { key: 'maintenance_message', value: maintenanceMessage },
+        ], { onConflict: 'key' });
+
+      if (error) throw error;
+      showToast('Pengaturan maintenance disimpan (GLOBAL)!', 'success');
+    } catch (error) {
+      console.error('Error saving maintenance:', error);
+      showToast('Gagal menyimpan pengaturan maintenance', 'error');
+    }
   };
 
-  if (loading) {
+  if (loading || maintenanceLoading) {
     return (
       <div className="flex justify-center items-center h-64">
         <Loader2 className="w-8 h-8 text-pmi animate-spin" />
@@ -239,7 +282,7 @@ const AdminSettings = () => {
             <div className="flex-1">
               <h2 className="text-base sm:text-lg font-semibold mb-1 flex items-center gap-2">
                 <Wrench size={20} className={maintenanceMode ? 'text-yellow-600' : 'text-pmi'} />
-                Maintenance Mode
+                Maintenance Mode (Global)
                 {maintenanceMode && (
                   <span className="text-xs bg-yellow-500 text-white px-2 py-0.5 rounded-full">
                     AKTIF
@@ -248,8 +291,8 @@ const AdminSettings = () => {
               </h2>
               <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                 {maintenanceMode 
-                  ? '⚠️ Website sedang dalam mode maintenance. Semua visitor melihat halaman perbaikan.'
-                  : 'Aktifkan untuk menampilkan halaman "Website sedang diperbaiki" ke semua visitor.'
+                  ? '⚠️ Website sedang dalam mode maintenance. Semua visitor di device manapun melihat halaman perbaikan.'
+                  : 'Aktifkan untuk menampilkan halaman "Website sedang diperbaiki" ke semua visitor secara global.'
                 }
               </p>
             </div>
