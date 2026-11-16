@@ -1,15 +1,15 @@
 {
   "rewrites": [
     {
-      "source": "/absensi/:path*",
-      "destination": "https://pmr-attendance-frontend.vercel.app/absensi/:path*"
-    },
-    {
       "source": "/absensi",
       "destination": "https://pmr-attendance-frontend.vercel.app/absensi"
     },
     {
-      "source": "/((?!absensi).*)",
+      "source": "/absensi/:path*",
+      "destination": "https://pmr-attendance-frontend.vercel.app/absensi/:path*"
+    },
+    {
+      "source": "/((?!_next/static|_next/image|favicon.ico|logo-pmr.png).*)",
       "destination": "/index.html"
     }
   ]
