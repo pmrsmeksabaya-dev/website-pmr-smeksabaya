@@ -5,8 +5,12 @@
       "destination": "https://pmr-attendance-frontend.vercel.app/absensi/:path*"
     },
     {
-      "source": "/(.*)",
+      "source": "/absensi",
+      "destination": "https://pmr-attendance-frontend.vercel.app/absensi"
+    },
+    {
+      "source": "/((?!absensi).*)",
       "destination": "/index.html"
     }
   ]
-} 
+}
